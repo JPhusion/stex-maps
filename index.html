@@ -147,6 +147,24 @@ mark{background:none;color:var(--txt);font-weight:700}
 .withl{display:flex;align-items:center;gap:5px;font-size:13px;color:#7b1fa2;margin-top:2px}.withl svg{width:15px;height:15px;fill:currentColor;flex:none}
 .btn.sm{height:32px;padding:0 12px}
 #me{border:0;cursor:pointer}
+
+#sheetX{position:absolute;top:4px;right:6px;z-index:2;width:40px;height:40px;background:#f1f3f4;border-radius:50%}
+#sheetX svg{width:20px;height:20px}
+#sheet.peek #sheetBody{overflow:hidden}
+#sbIcon{color:var(--sub)}
+.rw{font-size:12px;color:#7b1fa2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.mapall{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #f1f3f4;flex-wrap:wrap}
+.mdot{width:12px;height:12px;border-radius:50%;background:#ea4335;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
+.team{display:flex;transform:translate(-50%,-130%);gap:2px;pointer-events:auto}
+.tm{width:28px;height:28px;border-radius:50%;background:#7b1fa2;color:#fff;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);margin-left:-8px;cursor:pointer;pointer-events:auto}
+.tm:first-child{margin-left:0}.tm.me{background:#1a73e8}
+.blk{position:relative}
+.nowline{position:absolute;left:0;right:0;height:2px;background:#ea4335;z-index:1;pointer-events:none;display:block}
+.nowline b{position:absolute;left:-2px;top:-4px;width:10px;height:10px;border-radius:50%;background:#ea4335}
+.nowgap{position:relative;height:10px}.nowgap .nowline{top:4px}
+#leave{position:fixed;left:12px;right:12px;z-index:22;display:none;align-items:center;gap:8px;background:#d93025;color:#fff;border-radius:12px;padding:10px 8px 10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.3);max-width:560px;cursor:pointer}
+#leave .lv{flex:1;min-width:0}.lvt{font-size:15px;line-height:20px}.lvs{font-size:13px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvx{color:#fff;width:32px;height:32px;font-size:16px;flex:none}
 </style>
 </head>
 <body>
@@ -155,7 +173,7 @@ mark{background:none;color:var(--txt);font-weight:700}
 
 <div id="top">
   <div class="searchbar" id="sbar">
-    <svg class="i" viewBox="0 0 24 24" style="color:var(--sub)"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <button class="ib" id="sbIcon" style="width:32px;height:32px;margin-left:-6px" aria-label="Back"><svg class="i" viewBox="0 0 24 24" style="color:var(--sub)"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
     <div class="ph" id="sbarTxt">Search exhibitors or booths</div>
     <button class="avatar" id="me" title="Choose who you are" aria-label="Choose who you are">?</button>
   </div>
@@ -177,7 +195,8 @@ mark{background:none;color:var(--txt);font-weight:700}
   <div class="modes"><div class="mode"><svg viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9 7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg><span id="modeT">Walk</span></div></div>
 </div>
 
-<div id="sheet"><div class="handle" id="handle"><i></i></div><div id="sheetBody"></div></div>
+<div id="sheet"><div class="handle" id="handle"><i></i></div><button class="ib" id="sheetX" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><div id="sheetBody"></div></div>
+<div id="leave"></div>
 
 <div id="search">
   <div class="sHead">
@@ -243,15 +262,15 @@ function buildPlaces(){
     let bs=codes.map(c=>byCode[c]).filter(Boolean);
     if(!bs.length){const nn=key(x.n);bs=booths.filter(b=>b.name&&key(b.name)===nn)}
     bs.forEach(b=>used.add(b.k));
-    places.push({id:'e'+places.length,name:x.n,booth:bs[0]||null,booths:bs,codes,url:x.u||'',logo:/^https:\/\/cdn\.filestackcontent\.com\/\w+$/.test(x.l||'')?x.l:'',desc:x.d||'',cats:(x.c||'').split('||').map(s=>s.trim()).filter(Boolean),country:x.k||'',kind:'ex'});
+    places.push({id:'e'+places.length,name:x.n,booth:bs[0]||null,booths:bs,codes,url:x.u||'',logo:/^https:\/\/cdn\.filestackcontent\.com\/\w+$/.test(x.l||'')?x.l:'',desc:x.d||'',prods:Array.isArray(x.p)?x.p:[],cats:(x.c||'').split('||').map(s=>s.trim()).filter(Boolean),country:x.k||'',kind:'ex'});
   }
   const exAt={};places.forEach(p=>p.booths.forEach(b=>(exAt[b.k]=exAt[b.k]||[]).push(key(p.name))));
   for(const b of booths){
     if(used.has(b.k)){const bn=key(b.name);if(!bn||(exAt[b.k]||[]).some(e=>e===bn||e.includes(bn)||bn.includes(e)))continue}
     const nm=b.name||('Booth '+b.code);
-    places.push({id:'b'+b.k,name:nm,booth:b,booths:[b],codes:b.code?[b.code]:[],url:'',logo:'',desc:'',cats:[],country:'',kind:featureKind(nm)||'booth'});
+    places.push({id:'b'+b.k,name:nm,booth:b,booths:[b],codes:b.code?[b.code]:[],url:'',logo:'',desc:'',prods:[],cats:[],country:'',kind:featureKind(nm)||'booth'});
   }
-  places.forEach(p=>{p.n=norm(p.name);p.cn=norm(p.cats.join(' '))});
+  places.forEach(p=>{p.n=norm(p.name);p.cn=norm(p.cats.join(' '));p.hp=norm(p.prods.map(x=>x[0]+' '+(x[1]||'')).join(' | '));p.hd=norm(p.desc)});
   // per booth occupant list
   booths.forEach(b=>b.places=[]);
   places.forEach(p=>p.booths.forEach(b=>b.places.push(p)));
@@ -388,7 +407,7 @@ function pointInPoly([x,y],poly){let c=false;for(let i=0,j=poly.length-1;i<poly.
 function onTap(sx,sy){
   const wx=(sx-vx)/vs,wy=(sy-vy)/vs;
   const hit=booths.filter(b=>pointInPoly([wx,wy],b.img)).sort((a,b)=>a.area-b.area)[0];
-  if(!hit){if(state.mode==='place'){closePlace()}return}
+  if(!hit){if(state.mode!=='explore'&&state.mode!=='dir')setSheetState('peek');return}
   const p=hit.places[0];if(!p)return;
   if(state.mode==='dir'){toast('Destination: '+p.name);setDir(state.from,p);return}
   openPlace(p,false);
@@ -410,13 +429,24 @@ function drawOverlay(){
     }
     if(r.stairs)for(const s of r.stairs)addMk(s,'<div class="stair">'+IC.stairs+'</div>');
   }
+  if(overlay.multi){for(const p of overlay.multi){for(const b of p.booths){const pg=document.createElementNS(ns,'polygon');pg.setAttribute('points',b.img.map(q=>toScr(q).join(',')).join(' '));pg.setAttribute('fill','rgba(234,67,53,.18)');pg.setAttribute('stroke','#ea4335');pg.setAttribute('stroke-width','1.5');gB.appendChild(pg)}addMk(p.booth.ic,'<div class="mdot"></div>')}}
   if(overlay.from)addMk(overlay.from.booth.ic,'<div class="dot halo"></div>');
+  if(state.mode!=='dir')drawTeam();
   if(sel&&sel.booth)addMk(sel.booth.ic,'<div class="pin"><svg width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z" fill="#ea4335"/><path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z" fill="none" stroke="#b31412" stroke-width="1"/><circle cx="14" cy="14" r="5" fill="#b31412"/></svg></div>');
   // hall labels when zoomed out
   if(vs<0.35)for(const [h,x,y] of HALL_LBL){addMk([(x-X0)*PX,(y-Y0)*PX],'<div class="hallLbl">'+(h==='4.1'?'HALL 4.1 · UPPER DECK':'HALL '+h)+'</div>')}
 }
 const HALL_LBL=[['6',138,216],['5',252,216],['4',366,216],['2',475,237],['1',630,232],['7',160,365],['4.1',345,378]];
-function addMk(p,html){const [x,y]=toScr(p);const d=document.createElement('div');d.className='mk';d.style.transform=`translate(${x}px,${y}px)`;d.innerHTML=html;mks.appendChild(d)}
+function addMk(p,html){const [x,y]=toScr(p);const d=document.createElement('div');d.className='mk';d.style.transform=`translate(${x}px,${y}px)`;d.innerHTML=html;mks.appendChild(d);return d}
+function drawTeam(){
+  if(typeof roster==='undefined'||!roster)return;
+  const groups=new Map();
+  for(const nm of roster.names){const loc=whereNow(nm);if(!loc)continue;const k=loc.booth.k;if(!groups.has(k))groups.set(k,{p:loc,names:[]});groups.get(k).names.push(nm)}
+  for(const {p,names} of groups.values()){
+    const el=addMk(p.booth.ic,`<div class="team">${names.map(n=>`<button class="tm${me&&norm(me)===norm(n)?' me':''}" data-n="${esc(n)}" title="${esc(n)}">${esc(initials(n))}</button>`).join('')}</div>`);
+    el.querySelectorAll('.tm').forEach(b=>{b.addEventListener('pointerdown',e=>e.stopPropagation());b.onclick=e=>{e.stopPropagation();openPerson(b.dataset.n)}});
+  }
+}
 
 /* ---------------- UI state ---------------- */
 const home=places.find(p=>p.codes.includes(HOME_CODE))||places[0];
@@ -431,18 +461,43 @@ Object.defineProperty(state,'from',{get(){return state._from||autoFrom()},set(v)
 function topInset(){return state.mode==='dir'?$('dir').offsetHeight:$('top').offsetHeight}
 function sheetH(){const s=$('sheet');return s.style.display==='none'?0:s.offsetHeight}
 const sheet=$('sheet'),body=$('sheetBody');
-let sheetExpanded=false;
-function setSheet(html,{expand=false}={}){body.innerHTML=html;body.scrollTop=0;sheetExpanded=expand;layoutSheet()}
+let sheetState='half';   // peek | half | full
+function setSheet(html,{expand=false,keepScroll=false}={}){const st=body.scrollTop;body.innerHTML=html;if(keepScroll)body.scrollTop=st;else{body.scrollTop=0;sheetState=expand?'full':'half'}layoutSheet()}
+function setSheetState(v){sheetState=v;layoutSheet()}
 function layoutSheet(){
-  const max=Math.round(window.innerHeight*(sheetExpanded?0.85:0.42));
-  sheet.style.maxHeight=max+'px';
-  requestAnimationFrame(()=>{const h=sheet.offsetHeight;$('fabHome').style.bottom=(h+14)+'px';$('fabFit').style.bottom=(h+72)+'px'});
+  const max=sheetState==='peek'?96:Math.round(window.innerHeight*(sheetState==='full'?0.85:0.42));
+  sheet.style.maxHeight=max+'px';sheet.classList.toggle('peek',sheetState==='peek');
+  $('sheetX').style.display=state.mode==='explore'?'none':'';
+  {const bk=state.mode!=='explore';const ic=$('sbIcon');if(ic.dataset.bk!==String(bk)){ic.dataset.bk=bk;ic.innerHTML=bk?'<svg class="i" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>':'<svg class="i" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'}}
+  requestAnimationFrame(()=>{const h=sheet.offsetHeight;$('fabHome').style.bottom=(h+14)+'px';$('fabFit').style.bottom=(h+72)+'px';updateLeave()});
 }
-// drag handle to expand/collapse
+// drag the handle (or tap it): full <-> half <-> peek
 (()=>{let y0=null;const h=$('handle');
   h.addEventListener('pointerdown',e=>{y0=e.clientY;h.setPointerCapture(e.pointerId)});
-  h.addEventListener('pointerup',e=>{if(y0===null)return;const dy=e.clientY-y0;y0=null;if(Math.abs(dy)<6)sheetExpanded=!sheetExpanded;else sheetExpanded=dy<0;layoutSheet()});
+  h.addEventListener('pointerup',e=>{if(y0===null)return;const dy=e.clientY-y0;y0=null;
+    const order=['peek','half','full'];let i=order.indexOf(sheetState);
+    if(Math.abs(dy)<6)i=sheetState==='full'?1:i+1;else i+=dy<0?1:-1;
+    setSheetState(order[Math.max(0,Math.min(2,i))])});
 })();
+/* in-app history so the phone's back button (and the on-screen back/close buttons) step back through views */
+let navStack=[],navRestoring=false,pendingAfterPop=null;
+function nav(fn,{replaceTop=false}={}){
+  if(navRestoring)return;
+  if(replaceTop&&navStack.length){navStack[navStack.length-1]=fn;history.replaceState({stex:navStack.length},'');return}
+  navStack.push(fn);history.pushState({stex:navStack.length},'');
+}
+function goBack(){if(navStack.length||$('search').classList.contains('open'))history.back();else explore()}
+function closeAll(){if($('search').classList.contains('open')){goBack();return}if(navStack.length)history.go(-navStack.length);else explore()}
+window.addEventListener('popstate',e=>{
+  const st=e.state||{};const d=st.stex||0;
+  if($('search').classList.contains('open')){closeSearch();if(pendingAfterPop){const f=pendingAfterPop;pendingAfterPop=null;f();return}if(d===navStack.length)return}
+  if(st.s)return;
+  if(d>=navStack.length)return;
+  navStack.length=d;navRestoring=true;
+  try{d===0?explore():navStack[d-1]()}finally{navRestoring=false}
+});
+$('sheetX').onclick=closeAll;
+$('sbIcon').onclick=e=>{if(state.mode!=='explore'){e.stopPropagation();goBack()}};
 
 function initials(n){const w=String(n).replace(/[^\p{L}\p{N} ]/gu,' ').split(/\s+/).filter(Boolean);return((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase()}
 function placeIcon(p){return p.kind==='cafe'?IC.cafe:p.kind==='lounge'?IC.sofa:p.kind==='talk'?IC.mic:p.kind==='service'?IC.flag:IC.store}
@@ -471,6 +526,7 @@ function explore(){
   render();
 }
 function openPlace(p,fly=true){
+  nav(()=>openPlace(p,true),{replaceTop:state.mode==='place'&&state.place===p});
   state.mode='place';state.place=p;overlay={sel:p,route:null,from:state.from};
   $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
   $('sbarTxt').textContent=p.name;$('sbarTxt').classList.add('val');
@@ -504,12 +560,13 @@ function openPlace(p,fly=true){
   if(fly&&p.booth){const bb=bbox(p.booths.flatMap(b=>b.img));const pad=320;fitBox(bb[0]-pad,bb[1]-pad,bb[2]+pad,bb[3]+pad)}
   else render();
 }
-function closePlace(){explore()}
+function closePlace(){closeAll()}
 function fixUrl(u){return /^https?:\/\//i.test(u)?u:'https://'+u}
 function bbox(pts){let a=1e9,b=1e9,c=-1e9,d=-1e9;for(const [x,y] of pts){a=Math.min(a,x);b=Math.min(b,y);c=Math.max(c,x);d=Math.max(d,y)}return[a,b,c,d]}
 
 /* ---------------- directions ---------------- */
 function setDir(from,to,pickTo){
+  nav(()=>setDir(from,to),{replaceTop:state.mode==='dir'});
   state.mode='dir';state.from=from||null;state.to=to||null;
   $('top').style.display='none';$('dir').classList.add('open');
   $('fFromT').textContent=from?from.name+(from.booth&&from.booth.code?' ('+from.booth.code+')':'')+(fromIsAuto()&&me?' · my schedule':''):'Choose start';
@@ -541,13 +598,13 @@ function setDir(from,to,pickTo){
    <div class="ps">${viaH.length?'via '+viaH.map(hallName).join(', '):'Fastest walking route'}${r.stairs?' · includes stairs':''}</div>
    <div class="acts"><button class="btn pri" id="dSteps">${IC.dir}Steps</button><button class="btn" id="dDest">${IC.pin}Destination info</button><button class="btn" id="dFit">${IC.walk}Show route</button></div>
    <div class="sect" id="stepList">${steps.map(s=>`<div class="step">${s.ic}<div>${s.t}${s.s?'<small>'+s.s+'</small>':''}</div></div>`).join('')}</div>`);
-  $('dSteps').onclick=()=>{sheetExpanded=true;layoutSheet();$('stepList').scrollIntoView({behavior:'smooth'})};
+  $('dSteps').onclick=()=>{setSheetState('full');$('stepList').scrollIntoView({behavior:'smooth'})};
   $('dDest').onclick=()=>openPlace(to);
   $('dFit').onclick=()=>fitRoute(r);
   fitRoute(r);
 }
 function fitRoute(r){const bb=bbox(r.segs.flat());const pad=160;fitBox(bb[0]-pad,bb[1]-pad,bb[2]+pad,bb[3]+pad)}
-$('dirBack').onclick=()=>{state.to?openPlace(state.to):explore()};
+$('dirBack').onclick=goBack;
 $('swap').onclick=()=>setDir(state.to,state.from);
 $('fFrom').onclick=()=>openSearch('from');
 $('fTo').onclick=()=>openSearch('to');
@@ -555,16 +612,61 @@ $('fTo').onclick=()=>openSearch('to');
 /* ---------------- search ---------------- */
 let sTarget='place';
 function openSearch(target){
-  sTarget=target||'place';$('search').classList.add('open');
+  sTarget=target||'place';
+  if(!$('search').classList.contains('open'))history.pushState({stex:navStack.length,s:1},'');
+  $('search').classList.add('open');
   const ctx=$('sCtx');ctx.style.display=sTarget==='place'?'none':'block';ctx.textContent=sTarget==='from'?'Choose start point':'Choose destination';
   $('q').value='';renderResults('');setTimeout(()=>$('q').focus(),50);
 }
 function closeSearch(){$('search').classList.remove('open');$('q').blur()}
 $('sbar').onclick=()=>openSearch('place');
-$('sBack').onclick=()=>{closeSearch();if(sTarget!=='place'&&state.mode==='dir'&&(!state.from||!state.to)&&!state.from)explore()};
+$('sBack').onclick=()=>history.back();
+function afterSearch(fn){pendingAfterPop=fn;history.back()}
 $('qClear').onclick=()=>{$('q').value='';renderResults('');$('q').focus()};
 $('q').addEventListener('input',()=>renderResults($('q').value));
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'){const f=$('results').querySelector('.res');if(f)f.click()}});
+/* product / topic search: expand shorthand into related terms, match products, categories and descriptions */
+const SYN={
+ mcu:['mcu','microcontroller','microprocessor'],microcontroller:['microcontroller','mcu','microprocessor'],processor:['processor','microprocessor','mcu','cpu','soc'],
+ fpga:['fpga','programmable logic','asic'],asic:['asic','fpga'],adc:['adc','analog-to-digital','analogue-to-digital','data converter'],dac:['dac','digital-to-analog','digital-to-analogue','data converter'],
+ sdr:['sdr','software defined radio','software-defined radio','transceiver'],radio:['radio','transceiver','transponder','sdr'],transceiver:['transceiver','transponder','radio','sdr'],transponder:['transponder','transceiver'],
+ antenna:['antenna','antennas'],antennas:['antenna'],gnss:['gnss','gps','galileo'],gps:['gps','gnss'],
+ obc:['obc','on-board computer','onboard computer','flight computer','on board computer'],computer:['computer','obc','processor'],
+ battery:['battery','batteries','energy storage'],batteries:['battery','batteries'],solar:['solar','photovoltaic'],power:['power','pcdu','dc-dc','power supply','power conditioning','eps'],eps:['eps','pcdu','power system','electrical power'],
+ thruster:['thruster','propulsion'],propulsion:['propulsion','thruster'],adcs:['adcs','attitude','reaction wheel','magnetorquer','star tracker','sun sensor','gyro'],
+ 'star tracker':['star tracker','star sensor'],'reaction wheel':['reaction wheel','momentum wheel'],gyro:['gyro','gyroscope','imu','inertial'],imu:['imu','inertial','gyro','accelerometer'],
+ camera:['camera','imager','imaging'],optics:['optics','optical','lens','mirror','telescope'],laser:['laser','optical communication','lasercom','free-space optical','optical terminal'],
+ connector:['connector','interconnect'],connectors:['connector','interconnect'],cable:['cable','harness','wire'],harness:['harness','cable','wiring'],
+ pcb:['pcb','printed circuit','circuit board'],ems:['electronics manufacturing','ems','pcb assembly'],'rad hard':['rad-hard','radiation hardened','radiation-hardened','radiation tolerant','rad-tolerant','radhard'],radiation:['radiation','rad-hard','radiation hardened'],
+ sensor:['sensor'],sensors:['sensor'],thermal:['thermal','heat pipe','radiator','insulation','heater'],test:['test','testing','qualification'],testing:['test','testing'],vacuum:['vacuum','tvac','thermal vacuum'],vibration:['vibration','shaker','shock'],
+ emc:['emc','emi','electromagnetic'],'ground station':['ground station','ground segment','groundstation'],cubesat:['cubesat','smallsat','nanosat','small satellite'],
+ memory:['memory','nand','flash','sram','ddr','mram'],semiconductor:['semiconductor','transistor','mosfet','gan','diode','integrated circuit'],rf:['rf','microwave','radio frequency','millimetre','mmwave'],
+ amplifier:['amplifier','lna','hpa','twta','sspa'],filter:['filter','diplexer','multiplexer'],waveguide:['waveguide'],additive:['additive manufacturing','3d printing','additive'],'3d printing':['3d printing','additive manufacturing'],
+ composite:['composite','carbon fibre','carbon fiber','cfrp'],actuator:['actuator','mechanism','motor'],mechanism:['mechanism','actuator','hinge','deployable','release'],motor:['motor','actuator'],
+ launch:['launch','launcher','rideshare'],valve:['valve','valves'],valves:['valve'],
+};
+const reEsc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function termRe(t){return new RegExp('(^|[^a-z0-9])'+reEsc(t)+(t.length<=4?'s?(?![a-z])':''))}
+function topicGroups(q){
+  if(SYN[q])return[SYN[q].map(termRe)];
+  return q.split(/\s+/).filter(w=>w.length>=2).map(w=>(SYN[w]||[w]).map(termRe));
+}
+function topicMatch(p,groups){
+  if(!groups.length)return null;let sc=0,why=null;
+  for(const g of groups){
+    let f=null;
+    if(g.some(r=>r.test(p.hp)))f='p';else if(g.some(r=>r.test(p.n)))f='n';else if(g.some(r=>r.test(p.cn)))f='c';else if(g.some(r=>r.test(p.hd)))f='d';
+    if(!f)return null;sc+=f==='p'?120:f==='n'?100:f==='c'?70:50;
+    {const hs=[p.hp,p.n,p.cn,p.hd];const idx=g.findIndex(r=>hs.some(h=>r.test(h)));sc+=Math.max(0,30-8*idx)}   // the word typed beats a related word
+    if(!why){
+      if(f==='p'){const pr=p.prods.find(x=>g.some(r=>r.test(norm(x[0]+' '+(x[1]||'')))));if(pr)why='Product: '+pr[0]}
+      else if(f==='c'){const c=p.cats.find(x=>g.some(r=>r.test(norm(x))));if(c)why='Category: '+c}
+      else if(f==='d'){const r=g.find(r=>r.test(p.hd));const m=r&&r.exec(p.hd);if(m){const i=m.index;const a=Math.max(0,i-40),b=Math.min(p.desc.length,i+70);why=(a?'…':'')+p.desc.slice(a,b).trim()+(b<p.desc.length?'…':'')}}
+    }
+  }
+  return{sc,why};
+}
+let lastTopic=null;
 function score(p,q,words){
   if(!q)return 0;let s=0;
   const codeHit=p.codes.some(c=>norm(c)===q);if(codeHit)s+=1000;
@@ -580,7 +682,8 @@ function hl(name,q){if(!q)return esc(name);const n=norm(name);const i=n.indexOf(
 function resRow(p,q){
   let m='';if(p.booth&&state.from&&state.from.booth&&sTarget!=='from'){field(state.from.booth.k);const d=metres(p.booth.k);if(isFinite(d))m=`<b>${fmtMin(d)}</b>${fmtDist(d)}`}
   const sub=[p.booth&&p.booth.code?'Booth '+p.booth.code:'',p.booth?hallName(p.booth.hall):'Not on plan',p.cats[0]||''].filter(Boolean).map(esc).join(' · ');
-  return `<div class="res" data-id="${p.id}"><div class="ric">${p.logo?`<span class="ini">${esc(initials(p.name))}</span><img src="${esc(p.logo)}" alt="" loading="lazy" onerror="this.remove()">`:placeIcon(p)}</div><div class="rt"><div class="rn">${hl(p.name,q)}</div><div class="rs">${sub}</div></div><div class="rm">${m}</div></div>`;
+  const why=p._why?`<div class="rw">${esc(p._why)}</div>`:'';
+  return `<div class="res" data-id="${p.id}"><div class="ric">${p.logo?`<span class="ini">${esc(initials(p.name))}</span><img src="${esc(p.logo)}" alt="" loading="lazy" onerror="this.remove()">`:placeIcon(p)}</div><div class="rt"><div class="rn">${hl(p.name,q)}</div><div class="rs">${sub}</div>${why}</div><div class="rm">${m}</div></div>`;
 }
 function renderResults(raw){
   const q=norm(raw).trim(),words=q.split(/\s+/).filter(Boolean);const R=$('results');
@@ -592,14 +695,33 @@ function renderResults(raw){
     const fac=places.filter(p=>p.kind!=='ex'&&p.kind!=='booth');
     html+=`<div class="hdr">Cafés, lounges and stages</div>`+fac.map(p=>resRow(p,'')).join('');
   }else{
-    const list=places.map(p=>[score(p,q,words),p]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]||a[1].name.localeCompare(b[1].name)).slice(0,60);
-    html=list.length?list.map(x=>resRow(x[1],q)).join(''):`<div class="hdr" style="text-transform:none">No results for “${esc(raw)}”</div>`;
+    const groups=topicGroups(q);
+    const all=[];
+    for(const p of places){p._why=null;let sc=score(p,q,words);const tm=sc>=200?null:topicMatch(p,groups);if(tm){sc=Math.max(sc,tm.sc);p._why=tm.why}if(sc>0)all.push([sc,p,!!tm])}
+    all.sort((a,b)=>b[0]-a[0]||a[1].name.localeCompare(b[1].name));
+    const topical=all.filter(x=>x[2]&&x[1].booth).map(x=>x[1]);
+    lastTopic={q:raw.trim(),list:topical};
+    const list=all.slice(0,80);
+    html=(topical.length>=2&&sTarget==='place'?`<div class="mapall"><button class="btn pri" id="showAll">${IC.pin}Show all ${topical.length} on map</button><span class="muted">companies mentioning “${esc(raw.trim())}”</span></div>`:'')
+      +(list.length?list.map(x=>resRow(x[1],q)).join(''):`<div class="hdr" style="text-transform:none">No results for “${esc(raw)}”</div>`);
   }
   R.innerHTML=html;R.scrollTop=0;
   R.querySelectorAll('.res').forEach(el=>el.onclick=()=>choose(places.find(p=>p.id===el.dataset.id)));
+  if($('showAll'))$('showAll').onclick=()=>{const t=lastTopic;afterSearch(()=>openResults(t.q,t.list))};
 }
-function choose(p){
-  closeSearch();
+function openResults(q,list){
+  nav(()=>openResults(q,list));
+  state.mode='results';
+  $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
+  $('sbarTxt').textContent=q;$('sbarTxt').classList.add('val');
+  overlay={sel:null,route:null,from:state.from,multi:list};
+  const bb=bbox(list.flatMap(p=>p.booth.img));fitBox(bb[0]-120,bb[1]-120,bb[2]+120,bb[3]+120);
+  sTarget='place';
+  setSheet(`<div class="pt" style="margin:0">${list.length} companies for “${esc(q)}”</div><div class="muted" style="margin-bottom:6px">Red dots on the map. Matched on products, categories and descriptions from the exhibitor list.</div>${list.map(p=>resRow(p,'')).join('')}`);
+  body.querySelectorAll('.res').forEach(el=>el.onclick=()=>openPlace(places.find(p=>p.id===el.dataset.id)));
+}
+function choose(p){afterSearch(()=>choose2(p))}
+function choose2(p){
   if(sTarget==='from'){if(!p.booth){toast('That one is not on the floor plan');return}setDir(p,state.to);}
   else if(sTarget==='to'){if(!p.booth){toast('That one is not on the floor plan');return}setDir(state.from,p);}
   else openPlace(p);
@@ -717,7 +839,9 @@ function rosterChanged(){
   $('me').textContent=me?initials(me):'?';$('me').style.background=me?'#7b1fa2':'#9aa0a6';
   if(state.mode==='explore')explore();
   else if(state.mode==='sched')openSchedule(state.schedWho,state.schedDay,true);
+  else if(state.mode==='person')openPerson(state.personWho,true);
   else if(state.mode==='team')openTeam(true);
+  updateLeave();
 }
 /* time in Berlin */
 function berlinNow(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{y:+p.year,mm:+p.month,dd:+p.day,min:(+p.hour)*60+(+p.minute)}}
@@ -807,34 +931,39 @@ function openPeople(){
   const R=$('results');
   R.innerHTML=(names.length?names.map(n=>`<div class="res" data-n="${esc(n)}"><div class="ric"><span class="ini">${esc(initials(n))}</span></div><div class="rt"><div class="rn">${esc(n)}</div><div class="rs">${me&&norm(me)===norm(n)?'Selected':''}</div></div></div>`).join(''):`<div class="hdr" style="text-transform:none">${rosterErr?'Could not load the roster.':'Loading roster…'}</div>`)
    +(me?`<div class="res" data-n=""><div class="ric">${IC.start}</div><div class="rt"><div class="rn">Clear selection</div></div></div>`:'');
-  R.querySelectorAll('.res').forEach(el=>el.onclick=()=>{me=el.dataset.n||null;store.set('stex-me',me);closeSearch();rosterChanged();if(me)openSchedule(me)});
+  R.querySelectorAll('.res').forEach(el=>el.onclick=()=>{me=el.dataset.n||null;store.set('stex-me',me);afterSearch(()=>{rosterChanged();if(me)openSchedule(me)})});
 }
 /* my day */
 function openSchedule(who,di,keep){
   if(!who){openPeople();return}
   if(!roster){toast(rosterErr?'Roster unavailable':'Roster still loading');return}
+  if(!keep)nav(()=>openSchedule(who,di));
   state.mode='sched';state.schedWho=who;state.schedDay=di==null?defaultDay():di;
   if(!keep)overlay={sel:null,route:null,from:state.from};
   $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
   $('sbarTxt').textContent=who+"'s day";$('sbarTxt').classList.add('val');
   const d=state.schedDay,bl=blocksFor(who,d),t=todayIdx(),n=berlinNow();
   const tabs=roster.days.map((x,i)=>`<button class="dtab${i===d?' on':''}" data-d="${i}">${esc(x.label)} ${x.dd}/${x.mm}${i===t?' ·&nbsp;today':''}</button>`).join('');
+  const nowLine=pct=>`<i class="nowline" style="top:${pct}%"><b></b></i>`;
+  let gapDone=d!==t;
   const rows=bl.length?bl.map((b,i)=>{const isNow=d===t&&b.s<=n.min&&n.min<b.e;const w=blockWhere(b);
-    return`<div class="blk${isNow?' now':''}" data-i="${i}"><div class="bt">${hm(b.s)}<small>${hm(b.e)}</small></div>${swatch(b)}<div class="bx"><div class="nt">${esc(blockTitle(b))}${isNow?' <span class="nowtag">NOW</span>':''}</div>${w?`<div class="muted">${esc(w)}</div>`:''}${withLine(who,d,b)}</div></div>`}).join(''):`<div class="muted" style="padding:16px 0">Nothing on the roster for ${esc(who)} this day.</div>`;
+    let pre='';if(!gapDone&&!isNow&&n.min<b.s){pre='<div class="nowgap"><i class="nowline"><b></b></i></div>';gapDone=true}if(isNow)gapDone=true;
+    return pre+`<div class="blk${isNow?' now':''}" data-i="${i}">${isNow?nowLine(Math.round((n.min-b.s)/(b.e-b.s)*100)):''}<div class="bt">${hm(b.s)}<small>${hm(b.e)}</small></div>${swatch(b)}<div class="bx"><div class="nt">${esc(blockTitle(b))}${isNow?' <span class="nowtag">NOW</span>':''}</div>${w?`<div class="muted">${esc(w)}</div>`:''}${withLine(who,d,b)}</div></div>`}).join('')+(gapDone?'':'<div class="nowgap"><i class="nowline"><b></b></i></div>'):`<div class="muted" style="padding:16px 0">Nothing on the roster for ${esc(who)} this day.</div>`;
   setSheet(`<div class="schedh"><div><div class="pt" style="margin:0">${esc(who)}</div><div class="muted">${rosterStatusLine()}</div></div><button class="ib" id="rRefresh" aria-label="Refresh">${IC.refresh}</button></div>
     <div class="dtabs">${tabs}</div>
     <div class="legend">${['booth','roam','brk','meet','prep'].map(k=>`<span>${swatch({cat:k})}${CAT[k].l.split(':')[0]}</span>`).join('')}</div>
     <div>${rows}</div>
-    <div class="acts" style="margin-top:12px"><button class="btn" id="rWho">${IC.start}Switch person</button><button class="btn" id="rTeam">Team now</button><a class="btn" href="${SHEET_URL}" target="_blank" rel="noopener">${IC.web}Open roster</a></div>`,{expand:keep?sheetExpanded:true});
+    <div class="acts" style="margin-top:12px"><button class="btn" id="rWho">${IC.start}Switch person</button><button class="btn" id="rTeam">Team now</button><a class="btn" href="${SHEET_URL}" target="_blank" rel="noopener">${IC.web}Open roster</a></div>`,keep?{keepScroll:true}:{expand:true});
   body.querySelectorAll('.dtab').forEach(el=>el.onclick=()=>openSchedule(who,+el.dataset.d,true));
   body.querySelectorAll('.blk').forEach(el=>el.onclick=()=>openBlock(who,d,bl[+el.dataset.i]));
   $('rRefresh').onclick=()=>{toast('Refreshing roster…');loadRoster(true)};
   $('rWho').onclick=openPeople;$('rTeam').onclick=()=>openTeam();
-  const cur=body.querySelector('.blk.now');if(cur&&!keep)setTimeout(()=>cur.scrollIntoView({block:'center'}),60);
+  const cur=body.querySelector('.blk.now')||body.querySelector('.nowgap');if(cur&&!keep)setTimeout(()=>cur.scrollIntoView({block:'center'}),60);
   render();
 }
 function openBlock(who,di,b){
-  state.mode='block';
+  nav(()=>openBlock(who,di,b));
+  state.mode='block';$('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
   const pl=placeFor(b);const day=roster.days[di];
   const c=CAT[b.cat]||CAT.other;
   let mapHtml='';
@@ -858,13 +987,14 @@ function openBlock(who,di,b){
     ${b.text&&blockTitle(b)!==b.text?`<div class="ps" style="margin-top:6px">Roster note: <b>${esc(b.text)}</b></div>`:''}
     ${note?`<div class="ps" style="margin-top:8px">${esc(note)}</div>`:''}
     ${list?`<div class="sect" style="padding-top:4px">${list}</div>`:''}`);
-  $('bBack').onclick=()=>openSchedule(who,di,true);
+  $('bBack').onclick=goBack;
   body.querySelectorAll('[data-go]').forEach(el=>el.onclick=e=>{e.stopPropagation();const p=places.find(x=>x.id===el.dataset.go);if(p.booth===state.from.booth){openPlace(p);return}setDir(state.from,p)});
   body.querySelectorAll('.mini').forEach(el=>el.onclick=()=>openPlace(places.find(x=>x.id===el.dataset.id)));
 }
 /* team now */
 function openTeam(keep){
   if(!roster){toast(rosterErr?'Roster unavailable':'Roster still loading');return}
+  if(!keep)nav(()=>openTeam());
   state.mode='team';if(!keep)overlay={sel:null,route:null,from:state.from};
   $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
   $('sbarTxt').textContent='Team now';$('sbarTxt').classList.add('val');
@@ -877,15 +1007,57 @@ function openTeam(keep){
   $('rRefresh').onclick=()=>{toast('Refreshing roster…');loadRoster(true)};
   render();
 }
+/* where a person is right now (only when the roster pins them to one booth) */
+function whereNow(nm){const n=nowFor(nm);if(!n.today||!n.cur)return null;const pl=placeFor(n.cur);return pl&&pl.places.length===1&&pl.places[0].booth?pl.places[0]:null}
+function openPerson(nm,keep){
+  if(!keep)nav(()=>openPerson(nm));
+  state.mode='person';state.personWho=nm;
+  $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
+  $('sbarTxt').textContent=nm;$('sbarTxt').classList.add('val');
+  const n=nowFor(nm),b=n.cur,nx=n.next,loc=whereNow(nm);
+  if(!keep){overlay={sel:loc,route:null,from:state.from};if(loc)centerOn(loc.booth.ic,Math.max(vs,0.35));else render()}
+  setSheet(`<div class="nowh"><span class="avs" style="width:36px;height:36px;font-size:14px">${esc(initials(nm))}</span><div class="pt" style="margin:0">${esc(nm)}</div></div>
+    ${b&&b.cat!=='free'?`<div class="nowb">${swatch(b)}<div><div class="nt">${esc(blockTitle(b))}</div><div class="muted">${hm(b.s)}–${hm(b.e)}${blockWhere(b)?' · '+esc(blockWhere(b)):''}</div>${withLine(nm,n.day,b)}</div></div>`:`<div class="nowb">${swatch({cat:'free'})}<div class="nt">${n.today?'Nothing scheduled now':'Not started yet'}</div></div>`}
+    ${nx?`<div class="nowb nxt">${swatch(nx)}<div><div class="muted">${n.today?'Next':'First up'} at ${hm(nx.s)}</div><div class="nt2">${esc(blockTitle(nx))}</div></div></div>`:''}
+    <div class="acts"><button class="btn pri" id="pDay">${IC.history}${esc(nm)}'s day</button>${loc&&loc.booth!==state.from.booth?`<button class="btn" id="pGo">${IC.dir}Directions</button>`:''}</div>`,keep?{keepScroll:true}:{});
+  $('pDay').onclick=()=>openSchedule(nm);if($('pGo'))$('pGo').onclick=()=>setDir(state.from,loc);
+}
+/* red "leave now" banner for my next located slot */
+let leaveDismissed=store.get('stex-leave-x','');
+function updateLeave(){
+  const el=$('leave');let html='';
+  try{
+    if(me&&roster&&state.mode!=='dir'&&!$('search').classList.contains('open')){
+      const n=nowFor(me);const nx=n.next;
+      if(n.today&&nx&&['meet','event','booth','setup'].includes(nx.cat)){
+        const pl=placeFor(nx);const dest=pl&&pl.places.length===1?pl.places[0]:null;
+        const curLoc=whereNow(me)||home;const now=berlinNow().min;
+        let walk=0;if(dest&&dest.booth&&curLoc.booth&&dest.booth!==curLoc.booth){field(curLoc.booth.k);walk=Math.ceil(mins(metres(dest.booth.k)))}
+        const moving=dest?dest.booth!==curLoc.booth:true;
+        const leaveAt=nx.s-walk-2;const id=roster.days[n.day].name+nx.s+nx.text;
+        if(moving&&now>=leaveAt-5&&now<nx.s&&leaveDismissed!==id){
+          const t=leaveAt-now;const head=t<=0?'Leave now':'Leave in '+t+' min';
+          html=`<div class="lv" data-id="${esc(id)}"><div class="lvt"><b>${head}</b> for ${esc(blockTitle(nx))}</div><div class="lvs">Starts ${hm(nx.s)}${dest?' · '+esc(dest.booth.code?'Booth '+dest.booth.code+', ':'')+hallName(dest.booth.hall)+(walk?' · '+walk+' min walk':''):(blockWhere(nx)?' · '+esc(blockWhere(nx)):'')}</div></div><button class="lvx" aria-label="Dismiss">✕</button>`;
+          el._dest=dest;el._from=curLoc;
+        }
+      }
+    }
+  }catch(e){}
+  el.innerHTML=html;el.style.display=html?'flex':'none';
+  if(html){el.style.top=(($('top').style.display==='none'?0:$('top').offsetHeight)+4)+'px';
+    el.querySelector('.lv').onclick=()=>{if(el._dest)setDir(el._from,el._dest);else openSchedule(me)};
+    el.querySelector('.lvx').onclick=e=>{e.stopPropagation();leaveDismissed=el.querySelector('.lv').dataset.id;store.set('stex-leave-x',leaveDismissed);updateLeave()}}
+}
 $('me').onclick=e=>{e.stopPropagation();openPeople()};
 setInterval(()=>{if(document.visibilityState==='visible')loadRoster()},60000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-rosterAt>30000)loadRoster()});
-setInterval(()=>{if(state.mode==='explore'||state.mode==='team')rosterChanged()},30000);
+setInterval(()=>{if(state.mode==='explore'||state.mode==='team'||state.mode==='sched')rosterChanged();updateLeave()},30000);
 (()=>{const c=store.get('stex-roster',null);if(c){roster=c;rosterAt=c.at||0}})();
 
 /* ---------------- boot ---------------- */
 function boot(){
   minS=Math.min(vw()/IMW,vh()/IMH)*0.9;
+  try{history.replaceState({stex:0},'')}catch(e){}
   explore();fitAll(false);
   loadRoster();
   setTimeout(()=>{field(home.booth.k);$('loading').remove();
