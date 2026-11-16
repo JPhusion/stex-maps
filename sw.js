@@ -2,7 +2,7 @@
 // App files: try the network first (so updates show up), fall back to the saved copy.
 // Logos and fonts: use the saved copy if there is one.
 // The Google Sheet roster is not touched here; the app keeps its own last copy.
-const CACHE = 'stex-maps-v1';
+const CACHE = 'stex-maps-v2';
 const SHELL = ['./', 'index.html', 'data.js', 'exhibitors.js', 'map.webp'];
 
 self.addEventListener('install', e => {
@@ -16,7 +16,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.hostname === 'docs.google.com') return;
-  const cacheFirst = /filestackcontent\.com|fonts\.(googleapis|gstatic)\.com/.test(url.hostname);
+  const cacheFirst = /filestackcontent\.com|fonts\.(googleapis|gstatic)\.com|cdn\.jsdelivr\.net|tessdata\.projectnaptha\.com/.test(url.hostname);
   if (url.origin === location.origin) {
     e.respondWith(
       fetch(req).then(res => {

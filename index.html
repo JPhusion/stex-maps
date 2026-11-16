@@ -173,6 +173,11 @@ mark{background:none;color:var(--txt);font-weight:700}
 #needle{transition:transform .15s linear}
 #map{--crot:0deg}
 .mk>*{rotate:var(--crot)}
+
+.scanbox{display:flex;gap:12px;align-items:center;background:#f8f9fa;border-radius:12px;padding:10px;margin-top:8px}
+.scanbox img{width:72px;border-radius:6px;flex:none}
+.scantxt{margin-top:12px;font-size:13px;color:var(--sub)}
+.scantxt pre{white-space:pre-wrap;font-family:inherit;background:#f8f9fa;border-radius:8px;padding:8px;color:#3c4043;max-height:160px;overflow:auto}
 </style>
 </head>
 <body>
@@ -217,6 +222,8 @@ mark{background:none;color:var(--txt);font-weight:700}
   <div id="results"></div>
 </div>
 <div id="toast"></div>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+<input type="file" id="picIn" accept="image/*" hidden>
 <div id="loading">Loading map…</div>
 
 <script src="data.js"></script>
@@ -252,6 +259,7 @@ const IC={
  star:'<svg viewBox="0 0 24 24"><path d="m22 9.24-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>',
  starOn:'<svg viewBox="0 0 24 24" style="color:#f9ab00"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>',
  share:'<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>',
+ camera:'<svg viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>',
  history:'<svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>',
 };
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -266,6 +274,8 @@ booths.forEach(b=>{const m=String(b.name).match(/\((\w+)\)\s*$/);if(m&&!byCode[m
 const key=s=>norm(s).replace(/[^a-z0-9]/g,'');
 const featureKind=n=>{n=norm(n);if(/cafe|café/.test(n))return'cafe';if(/lounge|break|recharge|social/.test(n))return'lounge';if(/conference|forum|stage|theatre|theater/.test(n))return'talk';if(/registration|badge|service desk|lead retrieval|matchmaking|prep room/.test(n))return'service';return null};
 let places=[];
+// "endurosat" from "https://www.endurosat.com/", "leaf" from "leaf.space", "ohb" from "ohb.de"
+function domLabel(u){try{if(!u)return'';const h=new URL(/^https?:/i.test(u)?u:'https://'+u).hostname.toLowerCase().replace(/^www\d?\./,'');const parts=h.split('.');let i=parts.length-2;if(i>0&&/^(co|com|org|ac|gov|net)$/.test(parts[i])&&parts[parts.length-1].length===2)i--;return parts[Math.max(0,i)]||''}catch(e){return''}}
 function buildPlaces(){
   const EX=Array.isArray(window.EXH)?window.EXH:[];
   const used=new Set();places=[];
@@ -282,7 +292,7 @@ function buildPlaces(){
     const nm=b.name||('Booth '+b.code);
     places.push({id:'b'+b.k,name:nm,booth:b,booths:[b],codes:b.code?[b.code]:[],url:'',logo:'',desc:'',prods:[],cats:[],country:'',kind:featureKind(nm)||'booth'});
   }
-  places.forEach(p=>{p.n=norm(p.name);p.cn=norm(p.cats.join(' '));p.hp=norm(p.prods.map(x=>x[0]+' '+(x[1]||'')).join(' | '));p.hd=norm(p.desc)});
+  places.forEach(p=>{p.dom=domLabel(p.url);p.k=key(p.name);p.cn=norm(p.cats.join(' '));p.hp=norm(p.prods.map(x=>x[0]+' '+(x[1]||'')).join(' | '));p.hd=norm(p.desc)});
   // per booth occupant list
   booths.forEach(b=>b.places=[]);
   places.forEach(p=>p.booths.forEach(b=>b.places.push(p)));
@@ -789,13 +799,14 @@ function getRecent(){return store.get('stex-recent',[])}
 function pushRecent(p){const r=getRecent().filter(x=>x!==p.id);r.unshift(p.id);store.set('stex-recent',r.slice(0,8))}
 
 /* chips */
-const CH=[['me','My day',IC.history],['team','Team now',IC.people],['star','Starred',IC.starOn],['cafe','Cafés',IC.cafe],['lounge','Lounges',IC.sofa],['talk','Stages',IC.mic],['service','Services',IC.flag],...['1','2','4','4.1','5','6','7'].map(h=>['h'+h,'Hall '+h,IC.flagHall])];
+const CH=[['scan','Scan card',IC.camera],['me','My day',IC.history],['team','Team now',IC.people],['star','Starred',IC.starOn],['cafe','Cafés',IC.cafe],['lounge','Lounges',IC.sofa],['talk','Stages',IC.mic],['service','Services',IC.flag],...['1','2','4','4.1','5','6','7'].map(h=>['h'+h,'Hall '+h,IC.flagHall])];
 $('chips').innerHTML=CH.map(([k,l,i])=>`<button class="chip" data-k="${k}">${i}${l}</button>`).join('');
 $('chips').querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
   const k=el.dataset.k;
   if(k==='me'){openSchedule(me);return}
   if(k==='team'){openTeam();return}
   if(k==='star'){openStarred();return}
+  if(k==='scan'){openScan();return}
   if(k[0]==='h'){const h=k.slice(1);const bs=booths.filter(b=>b.hall===h);const bb=bbox(bs.flatMap(b=>b.img));fitBox(bb[0]-60,bb[1]-60,bb[2]+60,bb[3]+60);return}
   const list=places.filter(p=>p.kind===k);
   openSearch('place');const R=$('results');
@@ -1114,6 +1125,83 @@ setInterval(()=>{if(document.visibilityState==='visible')loadRoster()},60000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-rosterAt>30000)loadRoster()});
 setInterval(()=>{if(state.mode==='explore'||state.mode==='team'||state.mode==='sched')rosterChanged();updateLeave()},30000);
 (()=>{const c=store.get('stex-roster',null);if(c){roster=c;rosterAt=c.at||0}})();
+
+/* ---------------- business card / badge scanner (OCR runs on the phone) ---------------- */
+let scanState={busy:false,text:'',matches:[],thumb:''};
+function openScan(keep){
+  if(!keep)nav(()=>openScan(true));
+  state.mode='scan';
+  $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
+  $('sbarTxt').textContent='Scan a card or badge';$('sbarTxt').classList.add('val');
+  if(!keep)overlay={sel:null,route:null,from:state.from,multi:scanState.matches.filter(m=>m.p.booth).map(m=>m.p)};
+  const S=scanState;
+  let h=`<div class="pt" style="margin:0">Scan a card or badge</div>
+    <div class="muted">Take a photo of a business card or name badge. The text is read on your phone, then matched to an exhibitor by company name or email/web address.</div>
+    <div class="acts"><button class="btn pri" id="scCam">${IC.camera}Take photo</button><button class="btn" id="scPic">Choose photo</button></div>`;
+  if(S.busy)h+=`<div class="scanbox">${S.thumb?`<img src="${S.thumb}" alt="">`:''}<div><div class="nt">Reading the card…</div><div class="muted" id="scProg">${esc(S.prog||'Starting')}</div></div></div>`;
+  else if(S.text){
+    h+=S.matches.length?`<div class="hdr" style="padding:8px 0 4px">${S.matches.length===1?'Match':'Possible matches'}</div>`+S.matches.map((m,i)=>`<div class="res scm" data-id="${m.p.id}"><div class="ric">${m.p.logo?`<span class="ini">${esc(initials(m.p.name))}</span><img src="${esc(m.p.logo)}" alt="" onerror="this.remove()">`:placeIcon(m.p)}</div><div class="rt"><div class="rn">${isStar(m.p)?'<span class="rstar">★</span>':''}${esc(m.p.name)}</div><div class="rs">${m.p.booth?(m.p.booth.code?'Booth '+esc(m.p.booth.code)+' · ':'')+hallName(m.p.booth.hall):'Not on plan'} · ${esc(m.why)}</div></div><button class="btn sm${isStar(m.p)?'':' pri'}" data-star="${m.p.id}">${isStar(m.p)?'Starred':'★ Star'}</button></div>`).join('')
+      :`<div class="nowc" style="cursor:default"><div class="nt">No exhibitor matched</div><div class="muted">The company may not be exhibiting, or the photo was hard to read. Try again closer and flatter, or search by name.</div></div>`;
+    h+=`<details class="scantxt"><summary>Text read from the card</summary><pre>${esc(S.text)}</pre><button class="btn sm" id="scCopy">${IC.copy}Copy text</button></details>`;
+  }
+  setSheet(h,keep?{keepScroll:true}:{expand:true});
+  $('scCam').onclick=()=>$('camIn').click();$('scPic').onclick=()=>$('picIn').click();
+  body.querySelectorAll('.scm').forEach(el=>el.onclick=()=>openPlace(places.find(p=>p.id===el.dataset.id)));
+  body.querySelectorAll('[data-star]').forEach(el=>el.onclick=e=>{e.stopPropagation();const p=places.find(x=>x.id===el.dataset.star);setStar(p,!isStar(p));openScan(true)});
+  if($('scCopy'))$('scCopy').onclick=()=>{try{navigator.clipboard.writeText(S.text).then(()=>toast('Copied'))}catch(e){}};
+  render();
+}
+let tessP=null;
+function loadTess(){if(window.Tesseract)return Promise.resolve();if(tessP)return tessP;tessP=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=res;sc.onerror=()=>{tessP=null;rej(new Error('Could not load the text reader (needs signal the first time)'))};document.head.appendChild(sc)});return tessP}
+async function imgToCanvas(file){
+  const url=URL.createObjectURL(file);
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+  const sc=Math.min(1,1800/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+  const g=c.getContext('2d');g.drawImage(img,0,0,c.width,c.height);
+  // greyscale + stretch contrast helps OCR on glossy cards
+  const d=g.getImageData(0,0,c.width,c.height),a=d.data;let mn=255,mx=0;
+  for(let i=0;i<a.length;i+=4){const v=0.299*a[i]+0.587*a[i+1]+0.114*a[i+2];a[i]=v;if(v<mn)mn=v;if(v>mx)mx=v}
+  const r=Math.max(1,mx-mn);for(let i=0;i<a.length;i+=4){const v=(a[i]-mn)*255/r;a[i]=a[i+1]=a[i+2]=v}
+  g.putImageData(d,0,0);
+  const t=document.createElement('canvas');const ts=160/Math.max(c.width,c.height);t.width=c.width*ts;t.height=c.height*ts;t.getContext('2d').drawImage(img,0,0,t.width,t.height);
+  URL.revokeObjectURL(url);return{c,thumb:t.toDataURL('image/jpeg',0.7)};
+}
+const GENERIC=/^(gmbh|ag|se|sa|sas|srl|spa|bv|nv|ltd|limited|inc|llc|plc|kg|co|oy|ab|as|aps|sp|zoo|the|and|of|de|der|und|space|systems?|technolog(y|ies)|group|international|engineering|solutions|aerospace|europe|industries|electronics|company|services|satellite|defen[cs]e|research|centre|center|institute|university|gmbh)$/;
+function nameToks(p){if(!p._nt)p._nt=norm(p.name).split(/[^a-z0-9]+/).filter(w=>w.length>=3&&!GENERIC.test(w));return p._nt}
+function matchCard(text){
+  const low=text.toLowerCase();const k=key(text);const found=new Map();
+  const lines=text.split(/\n+/).map(l=>new Set(norm(l).split(/[^a-z0-9]+/).filter(Boolean)));
+  const add=(p,sc,why)=>{const o=found.get(p);if(!o||o.sc<sc)found.set(p,{p,sc,why})};
+  // email and web addresses
+  const doms=new Set();
+  for(const m of low.matchAll(/[a-z0-9._%+-]+@([a-z0-9-]+(?:\.[a-z0-9-]+)+)/g))doms.add(domLabel(m[1]));
+  for(const m of low.matchAll(/(?:https?:\/\/|www\.)([a-z0-9-]+(?:\.[a-z0-9-]+)+)/g))doms.add(domLabel(m[1]));
+  for(const m of low.matchAll(/\b([a-z0-9-]{3,}\.(?:com|de|eu|space|io|net|org|fr|it|es|nl|ch|at|se|no|fi|dk|be|pl|cz|lu|pt|gr|ie|us|ca|jp|kr|au|in|tech|aero|ai|co\.uk|uk|bg|ee|lt|lv|ro|hu|sk|si|il))\b/g))doms.add(domLabel(m[1]));
+  doms.delete('');
+  for(const p of places){if(p.kind!=='ex')continue;
+    if(p.dom&&p.dom.length>=3&&doms.has(p.dom))add(p,100,'matched '+p.dom+' address');
+    if(p.k.length>=5&&k.includes(p.k))add(p,60+Math.min(30,p.k.length),'name on card');
+    else{const t=nameToks(p);if(t.length&&lines.some(L=>t.every(w=>L.has(w))))add(p,45+10*t.length,'name on card')}
+  }
+  return [...found.values()].sort((a,b)=>b.sc-a.sc).slice(0,5);
+}
+async function runScan(file){
+  if(!file)return;const S=scanState;S.busy=true;S.text='';S.matches=[];S.prog='Preparing photo';
+  try{
+    const {c,thumb}=await imgToCanvas(file);S.thumb=thumb;openScan(state.mode==='scan');
+    let text;
+    if(window.__fakeOCR)text=window.__fakeOCR;
+    else{await loadTess();S.prog='Loading text reader';if($('scProg'))$('scProg').textContent=S.prog;
+      const r=await Tesseract.recognize(c,'eng',{logger:m=>{if(m.status){S.prog=m.status.replace(/^./,x=>x.toUpperCase())+(m.progress?' '+Math.round(m.progress*100)+'%':'');const el=$('scProg');if(el)el.textContent=S.prog}}});
+      text=r.data.text}
+    S.text=(text||'').trim()||'(no text found)';S.matches=matchCard(S.text);
+  }catch(e){S.text='';toast(e.message||'Could not read that photo')}
+  S.busy=false;
+  if(state.mode==='scan'){overlay={sel:null,route:null,from:state.from,multi:S.matches.filter(m=>m.p.booth).map(m=>m.p)};openScan(true)}
+  if(S.matches.length===1&&S.matches[0].sc>=60)toast('Found '+S.matches[0].p.name);
+}
+$('camIn').onchange=e=>{const f=e.target.files[0];e.target.value='';runScan(f)};
+$('picIn').onchange=e=>{const f=e.target.files[0];e.target.value='';runScan(f)};
 
 /* links: #J28 opens a booth, #s:J28,C42 adds starred booths */
 function handleHash(){
