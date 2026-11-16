@@ -168,6 +168,11 @@ mark{background:none;color:var(--txt);font-weight:700}
 
 .smk{color:#f9ab00;font-size:18px;line-height:18px;transform:translate(-50%,-50%);text-shadow:0 0 2px #fff,0 0 2px #fff,0 1px 3px rgba(0,0,0,.4)}
 .rstar{color:#f9ab00;margin-right:4px}
+
+#fabCompass{bottom:calc(var(--sab) + 236px)}#fabCompass.on{background:#e8f0fe;box-shadow:0 0 0 2px var(--blue),0 2px 6px rgba(60,64,67,.3)}
+#needle{transition:transform .15s linear}
+#map{--crot:0deg}
+.mk>*{rotate:var(--crot)}
 </style>
 </head>
 <body>
@@ -183,6 +188,7 @@ mark{background:none;color:var(--txt);font-weight:700}
   <div class="chips" id="chips"></div>
 </div>
 
+<button class="fab" id="fabCompass" aria-label="Turn the map to face the way you are walking"><svg id="needle" viewBox="0 0 24 24" width="26" height="26"><path d="M12 2 8 12h8z" fill="#ea4335"/><path d="M12 22 8 12h8z" fill="#9aa0a6"/><text x="12" y="10.5" text-anchor="middle" font-size="5" font-weight="700" fill="#fff">N</text></svg></button>
 <button class="fab" id="fabFit" aria-label="Show whole floor"><svg class="i" viewBox="0 0 24 24"><path d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2z"/></svg></button>
 <button class="fab" id="fabHome" aria-label="Go to start"><svg class="i" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></button>
 
@@ -405,22 +411,44 @@ function fitAll(a=true){fitBox(0,0,IMW,IMH,a)}
 function zoomAt(f,cx,cy){const ns=Math.max(minS,Math.min(maxS,vs*f));vx=cx-(cx-vx)*ns/vs;vy=cy-(cy-vy)*ns/vs;vs=ns;render()}
 // pointers
 const ptrs=new Map();let pinch=null,tapStart=null,lastTap=0;
-mapEl.addEventListener('pointerdown',e=>{mapEl.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);cancelAnimationFrame(anim);
-  if(ptrs.size===1)tapStart={x:e.clientX,y:e.clientY,t:Date.now(),moved:false};
+/* compass / heading-up: the floor plan's "up" points about 53° (north-east) in real life,
+   measured from the Messe Bremen hall outlines in OpenStreetMap */
+const PLAN_UP=53, DECL=3;   // degrees; DECL = magnetic declination in Bremen
+let rot=0,rotTarget=0,compassOn=false,rotRaf=0;
+function mapBox(){if(!compassOn){Object.assign(mapEl.style,{left:'',top:'',width:'',height:'',transform:''});return}
+  const D=Math.ceil(Math.hypot(innerWidth,innerHeight));Object.assign(mapEl.style,{left:((innerWidth-D)/2)+'px',top:((innerHeight-D)/2)+'px',width:D+'px',height:D+'px',right:'auto',bottom:'auto'});applyRot()}
+function applyRot(){mapEl.style.transform=compassOn?`rotate(${rot}deg)`:'';mapEl.style.setProperty('--crot',(-rot)+'deg');const n=$('needle');if(n)n.style.transform=`rotate(${rot-PLAN_UP}deg)`}
+function L(e){if(!compassOn)return[e.clientX,e.clientY];const D=mapEl.offsetWidth,dx=e.clientX-innerWidth/2,dy=e.clientY-innerHeight/2,t=-rot*Math.PI/180;return[dx*Math.cos(t)-dy*Math.sin(t)+D/2,dx*Math.sin(t)+dy*Math.cos(t)+D/2]}
+function onHeading(h){if(h==null||isNaN(h))return;rotTarget=PLAN_UP-(h+DECL);let d=((rotTarget-rot)%360+540)%360-180;if(Math.abs(d)<0.5)return;rot+=d*0.3;if(!rotRaf)rotRaf=requestAnimationFrame(()=>{rotRaf=0;applyRot()})}
+const iosH=e=>onHeading(e.webkitCompassHeading);
+const absH=e=>{if(e.absolute===false&&e.webkitCompassHeading==null)return;if(e.webkitCompassHeading!=null)return;if(e.alpha==null)return;const so=(screen.orientation&&screen.orientation.angle)||0;onHeading((360-e.alpha+so)%360)};
+async function compassToggle(){
+  if(compassOn){compassOn=false;window.removeEventListener('deviceorientation',iosH);window.removeEventListener('deviceorientationabsolute',absH);rot=0;mapBox();applyRot();$('fabCompass').classList.remove('on');render();toast('Map back to floor-plan view');return}
+  try{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);let r='granted';try{r=await DeviceOrientationEvent.requestPermission()}catch(e){if(isIOS){toast('Compass not available');return}}if(r!=='granted'&&isIOS){toast('Compass permission was not given');return}}}catch(e){}
+  if(!('ondeviceorientationabsolute' in window)&&!('ondeviceorientation' in window)){toast('This device has no compass');return}
+  compassOn=true;$('fabCompass').classList.add('on');
+  window.addEventListener('deviceorientation',iosH);window.addEventListener('deviceorientationabsolute',absH);
+  // centre on the start point, then keep the map turned the way you face
+  const keep=[vs];mapBox();const f=state.from;const D=mapEl.offsetWidth;vs=Math.max(keep[0],0.5);if(f&&f.booth){vx=D/2-f.booth.ic[0]*vs;vy=D/2-f.booth.ic[1]*vs}render();
+  toast('Heading-up on. Steel halls can throw the compass off, so trust the booth numbers');
+}
+window.addEventListener('resize',()=>{if(compassOn)mapBox()});
+mapEl.addEventListener('pointerdown',e=>{const [ex,ey]=L(e);mapEl.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[ex,ey]);cancelAnimationFrame(anim);
+  if(ptrs.size===1)tapStart={x:ex,y:ey,t:Date.now(),moved:false};
   if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),cx:(a[0]+b[0])/2,cy:(a[1]+b[1])/2};if(tapStart)tapStart.moved=true}
 });
-mapEl.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const p=ptrs.get(e.pointerId);const dx=e.clientX-p[0],dy=e.clientY-p[1];ptrs.set(e.pointerId,[e.clientX,e.clientY]);
-  if(ptrs.size===1){if(tapStart&&Math.hypot(e.clientX-tapStart.x,e.clientY-tapStart.y)>8)tapStart.moved=true;if(tapStart&&tapStart.moved){vx+=dx;vy+=dy;render()}}
+mapEl.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const [ex,ey]=L(e);const p=ptrs.get(e.pointerId);const dx=ex-p[0],dy=ey-p[1];ptrs.set(e.pointerId,[ex,ey]);
+  if(ptrs.size===1){if(tapStart&&Math.hypot(ex-tapStart.x,ey-tapStart.y)>8)tapStart.moved=true;if(tapStart&&tapStart.moved){vx+=dx;vy+=dy;render()}}
   else if(ptrs.size===2&&pinch){const [a,b]=[...ptrs.values()];const d=Math.hypot(a[0]-b[0],a[1]-b[1]),cx=(a[0]+b[0])/2,cy=(a[1]+b[1])/2;vx+=cx-pinch.cx;vy+=cy-pinch.cy;zoomAt(d/pinch.d,cx,cy);pinch={d,cx,cy}}
 });
-const endPtr=e=>{if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
+const endPtr=e=>{if(!ptrs.has(e.pointerId))return;const [ex,ey]=L(e);ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
   if(ptrs.size===0&&tapStart&&!tapStart.moved&&Date.now()-tapStart.t<400&&e.type==='pointerup'){
-    const now=Date.now();if(now-lastTap<300){zoomAt(2,e.clientX,e.clientY);lastTap=0;clearTimeout(tapT)}else{lastTap=now;const x=e.clientX,y=e.clientY;tapT=setTimeout(()=>onTap(x,y),260)}
+    const now=Date.now();if(now-lastTap<300){zoomAt(2,ex,ey);lastTap=0;clearTimeout(tapT)}else{lastTap=now;const x=ex,y=ey;tapT=setTimeout(()=>onTap(x,y),260)}
   }
   if(ptrs.size===0)tapStart=null;
 };let tapT=0;
 mapEl.addEventListener('pointerup',endPtr);mapEl.addEventListener('pointercancel',endPtr);
-mapEl.addEventListener('wheel',e=>{e.preventDefault();zoomAt(Math.exp(-e.deltaY*0.0018),e.clientX,e.clientY)},{passive:false});
+mapEl.addEventListener('wheel',e=>{e.preventDefault();const [ex,ey]=L(e);zoomAt(Math.exp(-e.deltaY*0.0018),ex,ey)},{passive:false});
 window.addEventListener('resize',()=>{minS=Math.min(vw()/IMW,vh()/IMH)*0.9;render()});
 function pointInPoly([x,y],poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,yi]=poly[i],[xj,yj]=poly[j];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c}return c}
 function onTap(sx,sy){
@@ -489,7 +517,7 @@ function layoutSheet(){
   sheet.style.maxHeight=max+'px';sheet.classList.toggle('peek',sheetState==='peek');
   $('sheetX').style.display=state.mode==='explore'?'none':'';
   {const bk=state.mode!=='explore';const ic=$('sbIcon');if(ic.dataset.bk!==String(bk)){ic.dataset.bk=bk;ic.innerHTML=bk?'<svg class="i" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>':'<svg class="i" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'}}
-  requestAnimationFrame(()=>{const h=sheet.offsetHeight;$('fabHome').style.bottom=(h+14)+'px';$('fabFit').style.bottom=(h+72)+'px';updateLeave()});
+  requestAnimationFrame(()=>{const h=sheet.offsetHeight;$('fabHome').style.bottom=(h+14)+'px';$('fabFit').style.bottom=(h+72)+'px';$('fabCompass').style.bottom=(h+130)+'px';updateLeave()});
 }
 // drag the handle (or tap it): full <-> half <-> peek
 (()=>{let y0=null;const h=$('handle');
@@ -775,7 +803,8 @@ $('chips').querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
   R.querySelectorAll('.res').forEach(e2=>e2.onclick=()=>choose(places.find(p=>p.id===e2.dataset.id)));
 });
 $('fabHome').onclick=()=>{const f=state.from||home;if(f.booth)centerOn(f.booth.ic,0.6)};
-$('fabFit').onclick=()=>fitAll();
+$('fabFit').onclick=()=>{if(compassOn)compassToggle();fitAll()};
+$('fabCompass').onclick=compassToggle;
 
 /* ---------------- team roster (live from Google Sheet) ---------------- */
 const SHEET_ID='1YXRmqrIiXkVeqkQsAsoG0wIQfgCNxevCLNN5eVZ2Kcw';
@@ -1100,6 +1129,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 function boot(){
   minS=Math.min(vw()/IMW,vh()/IMH)*0.9;
   try{history.replaceState({stex:0},'')}catch(e){}
+  applyRot();
   explore();fitAll(false);
   loadRoster();
   setTimeout(()=>{field(home.booth.k);$('loading').remove();
