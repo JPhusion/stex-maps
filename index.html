@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Expo Maps: Space Tech Expo Europe 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#1a73e8; --blue-d:#1967d2; --route:#4285f4; --red:#ea4335; --green:#188038;
+  --txt:#202124; --sub:#5f6368; --line:#dadce0; --bg:#fff; --chip:#f1f3f4;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:Roboto,system-ui,-apple-system,sans-serif;color:var(--txt);background:#e8eaed}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input{font:inherit}
+svg.i{width:24px;height:24px;fill:currentColor;flex:none}
+
+/* map */
+#map{position:fixed;inset:0;overflow:hidden;touch-action:none;background:#e8eaed;cursor:grab}
+#world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+#world img{display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+#ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.mk{position:absolute;left:0;top:0;pointer-events:none}
+.pin{transform:translate(-50%,-100%)}
+.dot{width:20px;height:20px;border-radius:50%;background:var(--route);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
+.dot.halo{box-shadow:0 0 0 10px rgba(66,133,244,.18),0 1px 4px rgba(0,0,0,.4)}
+.stair{width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid var(--route);display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);color:var(--route);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.stair svg{width:16px;height:16px;fill:currentColor}
+.hallLbl{position:absolute;transform:translate(-50%,-50%);font-size:12px;font-weight:700;color:#3c4043;letter-spacing:.06em;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;pointer-events:none;white-space:nowrap}
+
+/* top search */
+#top{position:fixed;left:0;right:0;top:0;padding:calc(var(--sat) + 10px) 12px 0;pointer-events:none;z-index:20}
+.searchbar{pointer-events:auto;display:flex;align-items:center;gap:10px;height:48px;background:#fff;border-radius:24px;box-shadow:0 2px 6px rgba(60,64,67,.3);padding:0 6px 0 16px;max-width:560px}
+.searchbar .ph{flex:1;color:var(--sub);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.searchbar .ph.val{color:var(--txt)}
+.avatar{width:34px;height:34px;border-radius:50%;background:#7b1fa2;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:14px}
+.chips{pointer-events:auto;display:flex;gap:8px;overflow-x:auto;padding:10px 0 6px;scrollbar-width:none;max-width:100%}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;background:#fff;border-radius:16px;box-shadow:0 1px 3px rgba(60,64,67,.3);font-size:14px;font-weight:500;color:#3c4043;white-space:nowrap}
+.chip svg{width:18px;height:18px;fill:currentColor}
+.chip.on{background:#e8f0fe;color:var(--blue-d)}
+
+/* fabs */
+.fab{position:fixed;right:14px;width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(60,64,67,.3);display:flex;align-items:center;justify-content:center;color:var(--blue);z-index:15;transition:bottom .25s}
+#fabHome{bottom:calc(var(--sab) + 120px)}
+#fabFit{bottom:calc(var(--sab) + 178px);color:var(--sub)}
+
+/* bottom sheet */
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -2px 10px rgba(60,64,67,.25);transform:translateY(0);transition:transform .25s ease,height .25s ease;max-width:640px;margin:0 auto;display:flex;flex-direction:column;padding-bottom:var(--sab)}
+#sheet.dragging{transition:none}
+.handle{padding:8px 0 4px;display:flex;justify-content:center;flex:none;touch-action:none;cursor:grab}
+.handle i{width:36px;height:4px;border-radius:2px;background:#dadce0;display:block}
+#sheetBody{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:0 16px 16px}
+.pt{font-size:22px;font-weight:400;line-height:28px;margin:2px 0 4px}
+.ps{color:var(--sub);font-size:14px;line-height:20px}
+.ps b{color:var(--txt);font-weight:500}
+.walk{display:inline-flex;align-items:center;gap:4px;color:var(--sub)}
+.walk svg{width:16px;height:16px;fill:currentColor}
+.acts{display:flex;gap:8px;overflow-x:auto;margin:14px -16px 6px;padding:0 16px 4px;scrollbar-width:none}
+.acts::-webkit-scrollbar{display:none}
+.btn{flex:none;display:flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:18px;border:1px solid var(--line);color:var(--blue-d);font-size:14px;font-weight:500;text-decoration:none;background:#fff}
+.btn svg{width:18px;height:18px;fill:currentColor}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.sect{border-top:1px solid #e8eaed;margin:12px -16px 0;padding:14px 16px 0}
+.row{display:flex;gap:16px;align-items:flex-start;padding:8px 0;font-size:14px;line-height:20px}
+.row svg{color:var(--blue-d);width:22px;height:22px}
+.row a{color:var(--blue-d);text-decoration:none;word-break:break-all}
+.about{font-size:14px;line-height:21px;color:#3c4043;white-space:pre-wrap}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{font-size:12px;background:var(--chip);border-radius:12px;padding:4px 10px;color:#3c4043}
+.mini{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f3f4}
+.logo{width:40px;height:40px;border-radius:50%;background:#e8f0fe;color:var(--blue-d);display:flex;align-items:center;justify-content:center;font-weight:500;flex:none;font-size:15px}
+.peekTitle{font-size:16px;font-weight:500}
+.muted{color:var(--sub);font-size:13px}
+
+/* search panel */
+#search{position:fixed;inset:0;background:#fff;z-index:50;display:none;flex-direction:column}
+#search.open{display:flex}
+.sHead{display:flex;align-items:center;gap:8px;padding:calc(var(--sat) + 8px) 8px 8px;border-bottom:1px solid var(--line)}
+.sHead input{flex:1;border:0;outline:0;font-size:17px;height:44px;background:none;min-width:0}
+.ib{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--sub);flex:none}
+.ib:active{background:#f1f3f4}
+#sCtx{padding:8px 16px;font-size:13px;color:var(--sub);border-bottom:1px solid #f1f3f4;display:none}
+#results{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.res{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid #f1f3f4;cursor:pointer}
+.res:active{background:#f8f9fa}
+.res .ric{width:36px;height:36px;border-radius:50%;background:var(--chip);display:flex;align-items:center;justify-content:center;color:var(--sub);flex:none}
+.res .ric svg{width:20px;height:20px}
+.res .ric{position:relative}
+.res .ini{font-size:13px;font-weight:500;color:var(--blue-d)}
+.res .ric img{position:absolute;inset:0;width:36px;height:36px;border-radius:50%;object-fit:contain;background:#fff;border:1px solid #e8eaed}
+.plogo{width:64px;height:64px;object-fit:contain;border-radius:8px;border:1px solid #e8eaed;background:#fff;flex:none;margin-top:6px}
+.res .rt{flex:1;min-width:0}
+.res .rn{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .rs{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .rm{font-size:13px;color:var(--sub);text-align:right;flex:none;min-width:44px}
+.res .rm b{display:block;color:var(--txt);font-weight:500}
+input[type=search]::-webkit-search-cancel-button{display:none}
+mark{background:none;color:var(--txt);font-weight:700}
+.hdr{padding:14px 16px 6px;font-size:13px;font-weight:500;color:var(--sub);text-transform:uppercase;letter-spacing:.04em}
+
+/* directions top card */
+#dir{position:fixed;left:0;right:0;top:0;z-index:25;background:#fff;box-shadow:0 2px 6px rgba(60,64,67,.25);padding:calc(var(--sat) + 8px) 8px 10px;display:none}
+#dir.open{display:block}
+.dRow{display:flex;align-items:center;gap:4px}
+.dFields{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+.dField{display:flex;align-items:center;gap:12px;height:40px;border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:15px;cursor:pointer;min-width:0}
+.dField span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dField .fd{width:12px;height:12px;border-radius:50%;border:2px solid var(--sub);flex:none}
+.dField .fp{width:12px;height:12px;flex:none;color:var(--red)}
+.modes{display:flex;gap:8px;margin:10px 0 0 48px}
+.mode{display:flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:16px;background:#e8f0fe;color:var(--blue-d);font-size:14px;font-weight:500}
+.mode svg{width:18px;height:18px;fill:currentColor}
+.rtTime{font-size:22px;color:var(--green);font-weight:400}
+.rtTime span{color:var(--sub);font-size:18px}
+.step{display:flex;gap:16px;padding:12px 0;border-bottom:1px solid #f1f3f4;font-size:14px;line-height:20px}
+.step svg{width:22px;height:22px;color:var(--sub);flex:none}
+.step small{display:block;color:var(--sub);font-size:13px}
+#toast{position:fixed;left:50%;bottom:calc(var(--sab) + 140px);transform:translateX(-50%);background:#323232;color:#fff;padding:10px 16px;border-radius:6px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.on{opacity:1}
+#loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;padding:12px 18px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:14px;z-index:70}
+</style>
+</head>
+<body>
+<div id="map"><div id="world"><img id="mapimg" src="map.webp" width="5360" height="2480" alt="Floor plan of Halls 1 to 7"></div>
+<svg id="ov"><g id="ovBooth"></g><g id="ovRoute"></g></svg><div id="mks"></div></div>
+
+<div id="top">
+  <div class="searchbar" id="sbar">
+    <svg class="i" viewBox="0 0 24 24" style="color:var(--sub)"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <div class="ph" id="sbarTxt">Search exhibitors or booths</div>
+    <div class="avatar" title="Home base: ANT61">A</div>
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<button class="fab" id="fabFit" aria-label="Show whole floor"><svg class="i" viewBox="0 0 24 24"><path d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2z"/></svg></button>
+<button class="fab" id="fabHome" aria-label="Go to start"><svg class="i" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></button>
+
+<div id="dir">
+  <div class="dRow">
+    <button class="ib" id="dirBack" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+    <div class="dFields">
+      <div class="dField" id="fFrom"><i class="fd"></i><span id="fFromT">Choose start</span></div>
+      <div class="dField" id="fTo"><svg class="fp" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg><span id="fToT">Choose destination</span></div>
+    </div>
+    <button class="ib" id="swap" aria-label="Swap start and destination"><svg class="i" viewBox="0 0 24 24"><path d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3 5 6.99h3V14h2V6.99h3L9 3z"/></svg></button>
+  </div>
+  <div class="modes"><div class="mode"><svg viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9 7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg><span id="modeT">Walk</span></div></div>
+</div>
+
+<div id="sheet"><div class="handle" id="handle"><i></i></div><div id="sheetBody"></div></div>
+
+<div id="search">
+  <div class="sHead">
+    <button class="ib" id="sBack" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+    <input id="q" type="search" placeholder="Search exhibitors or booths" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="ib" id="qClear" aria-label="Clear"><svg class="i" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+  </div>
+  <div id="sCtx"></div>
+  <div id="results"></div>
+</div>
+<div id="toast"></div>
+<div id="loading">Loading map…</div>
+
+<script src="data.js"></script>
+<script src="exhibitors.js" onerror="window.EXH=window.EXH||[]"></script>
+<script>
+(()=>{
+'use strict';
+const E=window.EXPO, GR=E.grid, W=GR.W, H=GR.H, S=GR.S, X0=GR.X0, Y0=GR.Y0;
+const PX=8;                       // map image pixels per PDF point
+const IMW=5360, IMH=2480;
+const M_PER_PT=E.mPerPt;          // metres per PDF point (from Messe Bremen hall dimensions)
+const WALK=1.1;                   // m/s, relaxed expo walking pace
+const HOME_CODE='1340';           // ANT61
+const $=id=>document.getElementById(id);
+const IC={
+ walk:'<svg viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9 7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>',
+ pin:'<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>',
+ dir:'<svg viewBox="0 0 24 24"><path d="M21.71 11.29l-9-9a.996.996 0 0 0-1.41 0l-9 9a.996.996 0 0 0 0 1.41l9 9c.39.39 1.02.39 1.41 0l9-9a.996.996 0 0 0 0-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>',
+ start:'<svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/></svg>',
+ web:'<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>',
+ copy:'<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>',
+ flag:'<svg viewBox="0 0 24 24"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>',
+ globe:'<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>',
+ stairs:'<svg viewBox="0 0 24 24"><path d="M19 5h-5v5h-4v4H6v5H3v2h5v-5h4v-4h4V7h3z"/></svg>',
+ cafe:'<svg viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2a2 2 0 0 0 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>',
+ sofa:'<svg viewBox="0 0 24 24"><path d="M21 9V7c0-1.65-1.35-3-3-3H6C4.35 4 3 5.35 3 7v2c-1.65 0-3 1.35-3 3v5c0 1.65 1.35 3 3 3v1h2v-1h14v1h2v-1c1.65 0 3-1.35 3-3v-5c0-1.65-1.35-3-3-3zM5 7c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v2.78c-.61.55-1 1.34-1 2.22v2H6v-2c0-.88-.39-1.67-1-2.22V7z"/></svg>',
+ mic:'<svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>',
+ store:'<svg viewBox="0 0 24 24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>',
+ flagHall:'<svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z"/></svg>',
+ arrive:'<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>',
+ history:'<svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>',
+};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const toast=(m)=>{const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2200)};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------------- data: booths + places ---------------- */
+const booths=E.booths.map((b,k)=>({...b,k,img:b.poly.map(([x,y])=>[(x-X0)*PX,(y-Y0)*PX]),ic:[(b.c[0]-X0)*PX,(b.c[1]-Y0)*PX]}));
+const byCode={};booths.forEach(b=>{if(b.code)byCode[b.code.toUpperCase()]=b});
+const key=s=>norm(s).replace(/[^a-z0-9]/g,'');
+const featureKind=n=>{n=norm(n);if(/cafe|café/.test(n))return'cafe';if(/lounge|break|recharge|social/.test(n))return'lounge';if(/conference|forum|stage|theatre|theater/.test(n))return'talk';if(/registration|badge|service desk|lead retrieval|matchmaking|prep room/.test(n))return'service';return null};
+let places=[];
+function buildPlaces(){
+  const EX=Array.isArray(window.EXH)?window.EXH:[];
+  const used=new Set();places=[];
+  for(const x of EX){
+    const codes=String(x.b||'').toUpperCase().split(/[\s,;/&+]+/).filter(Boolean);
+    let bs=codes.map(c=>byCode[c]).filter(Boolean);
+    if(!bs.length){const nn=key(x.n);bs=booths.filter(b=>b.name&&key(b.name)===nn)}
+    bs.forEach(b=>used.add(b.k));
+    places.push({id:'e'+places.length,name:x.n,booth:bs[0]||null,booths:bs,codes,url:x.u||'',logo:/^https:\/\/cdn\.filestackcontent\.com\/\w+$/.test(x.l||'')?x.l:'',desc:x.d||'',cats:(x.c||'').split('||').map(s=>s.trim()).filter(Boolean),country:x.k||'',kind:'ex'});
+  }
+  const exAt={};places.forEach(p=>p.booths.forEach(b=>(exAt[b.k]=exAt[b.k]||[]).push(key(p.name))));
+  for(const b of booths){
+    if(used.has(b.k)){const bn=key(b.name);if(!bn||(exAt[b.k]||[]).some(e=>e===bn||e.includes(bn)||bn.includes(e)))continue}
+    const nm=b.name||('Booth '+b.code);
+    places.push({id:'b'+b.k,name:nm,booth:b,booths:[b],codes:b.code?[b.code]:[],url:'',logo:'',desc:'',cats:[],country:'',kind:featureKind(nm)||'booth'});
+  }
+  places.forEach(p=>{p.n=norm(p.name);p.cn=norm(p.cats.join(' '))});
+  // per booth occupant list
+  booths.forEach(b=>b.places=[]);
+  places.forEach(p=>p.booths.forEach(b=>b.places.push(p)));
+}
+buildPlaces();
+const hallName=h=>h==='4.1'?'Hall 4.1 (Upper Deck)':'Hall '+h;
+
+/* ---------------- grid + pathfinding ---------------- */
+const N=W*H, cell=new Uint16Array(N);
+(()=>{const bin=atob(GR.rle);const u=new Uint16Array(bin.length/2);for(let i=0;i<u.length;i++)u[i]=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);let p=0;for(let i=0;i<u.length;i+=2){cell.fill(u[i],p,p+u[i+1]);p+=u[i+1]}})();
+const boothCells=booths.map(()=>[]);
+for(let i=0;i<N;i++){const v=cell[i];if(v>=1000)boothCells[v-1000].push(i)}
+const PA=E.portal[0][1]*W+E.portal[0][0], PB=E.portal[1][1]*W+E.portal[1][0], PCOST=E.portalCost;
+const COST=[Infinity,1,2,12];
+const DX=[1,-1,0,0,1,1,-1,-1],DY=[0,0,1,-1,1,-1,1,-1],DL=[1,1,1,1,Math.SQRT2,Math.SQRT2,Math.SQRT2,Math.SQRT2];
+const dist=new Float64Array(N), par=new Int32Array(N);
+let fieldFor=-1, boothBest=new Int32Array(booths.length), boothLen=new Float32Array(booths.length);
+// binary heap
+let hk=new Float64Array(1<<16), hv=new Int32Array(1<<16), hn=0;
+function hpush(k,v){if(hn>=hk.length){const a=new Float64Array(hk.length*2);a.set(hk);hk=a;const b=new Int32Array(hv.length*2);b.set(hv);hv=b}let i=hn++;while(i>0){const p=(i-1)>>1;if(hk[p]<=k)break;hk[i]=hk[p];hv[i]=hv[p];i=p}hk[i]=k;hv[i]=v}
+function hpop(){const v=hv[0],k=hk[--hn],x=hv[hn];let i=0;for(;;){let c=2*i+1;if(c>=hn)break;if(c+1<hn&&hk[c+1]<hk[c])c++;if(hk[c]>=k)break;hk[i]=hk[c];hv[i]=hv[c];i=c}hk[i]=k;hv[i]=x;return v}
+function field(origin){
+  if(fieldFor===origin)return;
+  dist.fill(Infinity);par.fill(-1);hn=0;
+  const ob=1000+origin;
+  for(const i of boothCells[origin]){dist[i]=0;hpush(0,i)}
+  while(hn){
+    const kd=hk[0], i=hpop(); if(kd>dist[i])continue;
+    const x=i%W,y=(i-x)/W;
+    for(let d=0;d<8;d++){
+      const nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=W||ny>=H)continue;
+      const j=ny*W+nx,v=cell[j];
+      const c=v>=1000?(v===ob?1:Infinity):COST[v];if(c===Infinity)continue;
+      if(d>=4){const a=cell[y*W+nx],b=cell[ny*W+x];if((a===0||(a>=1000&&a!==ob))||(b===0||(b>=1000&&b!==ob)))continue}
+      const nd=kd+DL[d]*c;if(nd<dist[j]){dist[j]=nd;par[j]=i;hpush(nd,j)}
+    }
+    if(i===PA||i===PB){const j=i===PA?PB:PA,nd=kd+PCOST;if(nd<dist[j]){dist[j]=nd;par[j]=i;hpush(nd,j)}}
+  }
+  // best approach cell per booth
+  const bd=new Float32Array(booths.length).fill(Infinity);boothBest.fill(-1);
+  for(let i=0;i<N;i++){
+    const v=cell[i];if(v===0||v>=1000||dist[i]===Infinity)continue;
+    const x=i%W;
+    const ns=[x+1<W?i+1:-1,x>0?i-1:-1,i+W<N?i+W:-1,i-W>=0?i-W:-1];
+    for(const j of ns){if(j<0)continue;const u=cell[j];if(u>=1000){const k=u-1000;if(dist[i]<bd[k]){bd[k]=dist[i];boothBest[k]=i}}}
+  }
+  // geometric length of each route (in grid cells)
+  for(let k=0;k<booths.length;k++){
+    if(k===origin){boothLen[k]=0;continue}
+    let i=boothBest[k];if(i<0){boothLen[k]=Infinity;continue}
+    let L=0;
+    while(par[i]>=0){const p=par[i];if((i===PA&&p===PB)||(i===PB&&p===PA))L+=PCOST;else{const dx=Math.abs(i%W-p%W),dy=Math.abs(((i/W)|0)-((p/W)|0));L+=(dx&&dy)?Math.SQRT2:1}i=p}
+    boothLen[k]=L*0.93;   // grid paths zig-zag a little; trims to the straightened length
+  }
+  fieldFor=origin;
+}
+const metres=k=>boothLen[k]/S*M_PER_PT;
+const mins=m=>m/WALK/60;
+function fmtMin(m){const t=mins(m);return t<0.75?'<1 min':Math.round(t)+' min'}
+function fmtDist(m){return m<1000?(Math.round(m/10)*10||10)+' m':(m/1000).toFixed(1)+' km'}
+
+function passable(i,o,dk){const v=cell[i];return v===1||v===2||v===1000+o||v===1000+dk}
+function los(a,b,o,dk){
+  const ax=a%W,ay=(a/W)|0,bx=b%W,by=(b/W)|0;const n=Math.ceil(Math.max(Math.abs(bx-ax),Math.abs(by-ay))*2);
+  for(let s=0;s<=n;s++){const x=Math.round(ax+(bx-ax)*s/n),y=Math.round(ay+(by-ay)*s/n);if(!passable(y*W+x,o,dk))return false}
+  return true;
+}
+function route(o,dk){
+  field(o);
+  let i=boothBest[dk];if(i<0)return null;
+  const raw=[];while(i>=0){raw.push(i);i=par[i]}raw.reverse();
+  // split at the stairs
+  const segs=[[]];
+  for(let t=0;t<raw.length;t++){const c=raw[t],p=raw[t-1];if(t&&((c===PA&&p===PB)||(c===PB&&p===PA)))segs.push([]);segs[segs.length-1].push(c)}
+  const out=segs.map(sg=>{
+    const pts=[sg[0]];let a=0;
+    for(let j=1;j<sg.length;j++){if(!los(sg[a],sg[j],o,dk)){a=j-1;pts.push(sg[a])}}
+    pts.push(sg[sg.length-1]);
+    return pts.map(cellImg);
+  });
+  const ob=booths[o],db=booths[dk];
+  out[0].unshift(ob.ic.slice());out[out.length-1].push(db.ic.slice());
+  return {segs:out,m:metres(dk),stairs:segs.length>1?[cellImg(PA),cellImg(PB)]:null,raw};
+}
+function cellImg(c){return[(c%W)/S*PX,((c/W)|0)/S*PX]}
+function hallAt(px,py){const x=px/PX+X0,y=py/PX+Y0;if(y<360)return x<176?'6':x<328?'5':x<407?'4':x<544?'2':'1';return x<230?'7':'4.1'}
+
+/* ---------------- map view (pan / zoom) ---------------- */
+const mapEl=$('map'),world=$('world'),ov=$('ov'),mks=$('mks');
+let vs=0.1,vx=0,vy=0,minS=0.05,maxS=2;
+function vw(){return mapEl.clientWidth}function vh(){return mapEl.clientHeight}
+function clampView(){
+  vs=Math.max(minS,Math.min(maxS,vs));
+  const w=IMW*vs,h=IMH*vs,mw=vw(),mh=vh();
+  const padX=mw*0.4,padY=mh*0.4;
+  vx=w+2*padX<mw?(mw-w)/2:Math.min(padX,Math.max(mw-w-padX,vx));
+  vy=h+2*padY<mh?(mh-h)/2:Math.min(padY,Math.max(mh-h-padY,vy));
+}
+let raf=0;function render(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;clampView();world.style.transform=`translate(${vx}px,${vy}px) scale(${vs})`;drawOverlay()})}
+const toScr=([x,y])=>[x*vs+vx,y*vs+vy];
+function fitBox(x0,y0,x1,y1,anim=true){
+  const top=topInset()+16,bot=sheetH()+24,mw=vw()-32,mh=vh()-top-bot;
+  const s=Math.max(minS,Math.min(maxS*0.6,Math.min(mw/Math.max(x1-x0,1),mh/Math.max(y1-y0,1))));
+  const tx=16+(mw-(x1-x0)*s)/2-x0*s,ty=top+(mh-(y1-y0)*s)/2-y0*s;
+  animateTo(s,tx,ty,anim);
+}
+function centerOn([x,y],s){const top=topInset(),bot=sheetH();s=s||Math.max(vs,0.5);animateTo(s,vw()/2-x*s,top+(vh()-top-bot)/2-y*s)}
+let anim=0;function animateTo(s,x,y,on=true){cancelAnimationFrame(anim);if(!on){vs=s;vx=x;vy=y;render();return}const s0=vs,x0=vx,y0=vy,t0=performance.now(),D=320;
+  const step=t=>{let k=Math.min(1,(t-t0)/D);k=1-Math.pow(1-k,3);
+    // interpolate in log scale and keep motion smooth
+    vs=s0*Math.pow(s/s0,k);vx=x0+(x-x0)*k;vy=y0+(y-y0)*k;render();if(k<1)anim=requestAnimationFrame(step)};anim=requestAnimationFrame(step)}
+function fitAll(a=true){fitBox(0,0,IMW,IMH,a)}
+function zoomAt(f,cx,cy){const ns=Math.max(minS,Math.min(maxS,vs*f));vx=cx-(cx-vx)*ns/vs;vy=cy-(cy-vy)*ns/vs;vs=ns;render()}
+// pointers
+const ptrs=new Map();let pinch=null,tapStart=null,lastTap=0;
+mapEl.addEventListener('pointerdown',e=>{mapEl.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);cancelAnimationFrame(anim);
+  if(ptrs.size===1)tapStart={x:e.clientX,y:e.clientY,t:Date.now(),moved:false};
+  if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),cx:(a[0]+b[0])/2,cy:(a[1]+b[1])/2};if(tapStart)tapStart.moved=true}
+});
+mapEl.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const p=ptrs.get(e.pointerId);const dx=e.clientX-p[0],dy=e.clientY-p[1];ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size===1){if(tapStart&&Math.hypot(e.clientX-tapStart.x,e.clientY-tapStart.y)>8)tapStart.moved=true;if(tapStart&&tapStart.moved){vx+=dx;vy+=dy;render()}}
+  else if(ptrs.size===2&&pinch){const [a,b]=[...ptrs.values()];const d=Math.hypot(a[0]-b[0],a[1]-b[1]),cx=(a[0]+b[0])/2,cy=(a[1]+b[1])/2;vx+=cx-pinch.cx;vy+=cy-pinch.cy;zoomAt(d/pinch.d,cx,cy);pinch={d,cx,cy}}
+});
+const endPtr=e=>{if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
+  if(ptrs.size===0&&tapStart&&!tapStart.moved&&Date.now()-tapStart.t<400&&e.type==='pointerup'){
+    const now=Date.now();if(now-lastTap<300){zoomAt(2,e.clientX,e.clientY);lastTap=0;clearTimeout(tapT)}else{lastTap=now;const x=e.clientX,y=e.clientY;tapT=setTimeout(()=>onTap(x,y),260)}
+  }
+  if(ptrs.size===0)tapStart=null;
+};let tapT=0;
+mapEl.addEventListener('pointerup',endPtr);mapEl.addEventListener('pointercancel',endPtr);
+mapEl.addEventListener('wheel',e=>{e.preventDefault();zoomAt(Math.exp(-e.deltaY*0.0018),e.clientX,e.clientY)},{passive:false});
+window.addEventListener('resize',()=>{minS=Math.min(vw()/IMW,vh()/IMH)*0.9;render()});
+function pointInPoly([x,y],poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,yi]=poly[i],[xj,yj]=poly[j];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c}return c}
+function onTap(sx,sy){
+  const wx=(sx-vx)/vs,wy=(sy-vy)/vs;
+  const hit=booths.filter(b=>pointInPoly([wx,wy],b.img)).sort((a,b)=>a.area-b.area)[0];
+  if(!hit){if(state.mode==='place'){closePlace()}return}
+  const p=hit.places[0];if(!p)return;
+  if(state.mode==='dir'){toast('Destination: '+p.name);setDir(state.from,p);return}
+  openPlace(p,false);
+}
+
+/* ---------------- overlay drawing ---------------- */
+const ns='http://www.w3.org/2000/svg';
+let overlay={sel:null,route:null,from:null};
+function drawOverlay(){
+  const gB=$('ovBooth'),gR=$('ovRoute');gB.innerHTML='';gR.innerHTML='';mks.innerHTML='';
+  const sel=overlay.sel;
+  if(sel){for(const b of sel.booths){const pg=document.createElementNS(ns,'polygon');pg.setAttribute('points',b.img.map(p=>toScr(p).join(',')).join(' '));pg.setAttribute('fill','rgba(234,67,53,.22)');pg.setAttribute('stroke','#ea4335');pg.setAttribute('stroke-width','2');gB.appendChild(pg)}}
+  const r=overlay.route;
+  if(r){
+    const w=Math.max(5,Math.min(9,vs*14));
+    for(const sg of r.segs){
+      const pts=sg.map(p=>toScr(p).join(',')).join(' ');
+      for(const [col,ww] of [['#1967d2',w+3],['#4285f4',w]]){const pl=document.createElementNS(ns,'polyline');pl.setAttribute('points',pts);pl.setAttribute('fill','none');pl.setAttribute('stroke',col);pl.setAttribute('stroke-width',ww);pl.setAttribute('stroke-linejoin','round');pl.setAttribute('stroke-linecap','round');gR.appendChild(pl)}
+    }
+    if(r.stairs)for(const s of r.stairs)addMk(s,'<div class="stair">'+IC.stairs+'</div>');
+  }
+  if(overlay.from)addMk(overlay.from.booth.ic,'<div class="dot halo"></div>');
+  if(sel&&sel.booth)addMk(sel.booth.ic,'<div class="pin"><svg width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z" fill="#ea4335"/><path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z" fill="none" stroke="#b31412" stroke-width="1"/><circle cx="14" cy="14" r="5" fill="#b31412"/></svg></div>');
+  // hall labels when zoomed out
+  if(vs<0.35)for(const [h,x,y] of HALL_LBL){addMk([(x-X0)*PX,(y-Y0)*PX],'<div class="hallLbl">'+(h==='4.1'?'HALL 4.1 · UPPER DECK':'HALL '+h)+'</div>')}
+}
+const HALL_LBL=[['6',138,216],['5',252,216],['4',366,216],['2',475,237],['1',630,232],['7',160,365],['4.1',345,378]];
+function addMk(p,html){const [x,y]=toScr(p);const d=document.createElement('div');d.className='mk';d.style.transform=`translate(${x}px,${y}px)`;d.innerHTML=html;mks.appendChild(d)}
+
+/* ---------------- UI state ---------------- */
+const home=places.find(p=>p.codes.includes(HOME_CODE))||places[0];
+const state={mode:'explore',place:null,from:home,to:null,filter:null};
+function topInset(){return state.mode==='dir'?$('dir').offsetHeight:$('top').offsetHeight}
+function sheetH(){const s=$('sheet');return s.style.display==='none'?0:s.offsetHeight}
+const sheet=$('sheet'),body=$('sheetBody');
+let sheetExpanded=false;
+function setSheet(html,{expand=false}={}){body.innerHTML=html;body.scrollTop=0;sheetExpanded=expand;layoutSheet()}
+function layoutSheet(){
+  const max=Math.round(window.innerHeight*(sheetExpanded?0.85:0.42));
+  sheet.style.maxHeight=max+'px';
+  requestAnimationFrame(()=>{const h=sheet.offsetHeight;$('fabHome').style.bottom=(h+14)+'px';$('fabFit').style.bottom=(h+72)+'px'});
+}
+// drag handle to expand/collapse
+(()=>{let y0=null;const h=$('handle');
+  h.addEventListener('pointerdown',e=>{y0=e.clientY;h.setPointerCapture(e.pointerId)});
+  h.addEventListener('pointerup',e=>{if(y0===null)return;const dy=e.clientY-y0;y0=null;if(Math.abs(dy)<6)sheetExpanded=!sheetExpanded;else sheetExpanded=dy<0;layoutSheet()});
+})();
+
+function initials(n){const w=String(n).replace(/[^\p{L}\p{N} ]/gu,' ').split(/\s+/).filter(Boolean);return((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase()}
+function placeIcon(p){return p.kind==='cafe'?IC.cafe:p.kind==='lounge'?IC.sofa:p.kind==='talk'?IC.mic:p.kind==='service'?IC.flag:IC.store}
+function subLine(p){
+  if(!p.booth)return 'Not on this floor plan'+(p.codes.length?' · Stand '+p.codes.join(', '):'');
+  const b=p.booth;return (b.code?'Booth '+esc(b.code)+' · ':'')+hallName(b.hall);
+}
+function walkLine(p,from){
+  if(!p.booth||!from||!from.booth)return '';
+  if(from.booth===p.booth)return '<span class="walk">'+IC.walk+'Same booth as '+esc(from.name)+'</span>';
+  field(from.booth.k);const m=metres(p.booth.k);if(!isFinite(m))return '';
+  return '<span class="walk">'+IC.walk+'<b style="color:var(--txt);font-weight:500">'+fmtMin(m)+'</b>&nbsp;('+fmtDist(m)+') from '+esc(from.name)+'</span>';
+}
+function explore(){
+  state.mode='explore';state.place=null;overlay={sel:null,route:null,from:home};
+  $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
+  $('sbarTxt').textContent='Search exhibitors or booths';$('sbarTxt').classList.remove('val');
+  const nEx=places.filter(p=>p.kind==='ex').length;
+  setSheet(`<div class="peekTitle">Space Tech Expo Europe 2026</div>
+   <div class="ps">Messe Bremen · Halls 1, 2, 4, 4.1, 5, 6, 7${nEx?' · '+nEx+' exhibitors':''}</div>
+   <div class="acts"><button class="btn pri" id="goHome">${IC.start}Start: ${esc(home.name)} ${home.booth?'('+esc(home.booth.code)+')':''}</button><button class="btn" id="goDir">${IC.dir}Directions</button></div>
+   <div class="muted">Tap any booth or search to see where it is and how long the walk is. Times assume an easy ${WALK} m/s walking pace.</div>`);
+  $('goHome').onclick=()=>openPlace(home);$('goDir').onclick=()=>setDir(state.from||home,null,true);
+  render();
+}
+function openPlace(p,fly=true){
+  state.mode='place';state.place=p;overlay={sel:p,route:null,from:state.from};
+  $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
+  $('sbarTxt').textContent=p.name;$('sbarTxt').classList.add('val');
+  const others=p.booth?p.booth.places.filter(q=>q!==p):[];
+  const isFrom=state.from===p;
+  const cats=p.cats.length?`<div class="tags">${p.cats.map(c=>'<span class="tag">'+esc(c)+'</span>').join('')}</div>`:'';
+  setSheet(`<div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:1;min-width:0"><div class="pt">${esc(p.name)}</div>
+   ${p.cats[0]?'<div class="ps">'+esc(p.cats[0])+'</div>':''}
+   <div class="ps"><b>${subLine(p)}</b></div></div>${p.logo?`<img class="plogo" src="${esc(p.logo)}" alt="" onerror="this.remove()">`:''}</div>
+   <div class="ps" style="margin-top:4px">${isFrom?'<span class="walk">'+IC.start+'This is your start point</span>':walkLine(p,state.from)}</div>
+   <div class="acts">
+     ${p.booth?`<button class="btn pri" id="aDir">${IC.dir}Directions</button>`:''}
+     ${p.booth&&!isFrom?`<button class="btn" id="aStart">${IC.start}Start here</button>`:''}
+     ${p.url?`<a class="btn" href="${esc(fixUrl(p.url))}" target="_blank" rel="noopener">${IC.web}Website</a>`:''}
+     ${p.booth?`<button class="btn" id="aCopy">${IC.copy}Copy booth</button>`:''}
+   </div>
+   ${p.desc||cats?`<div class="sect"><div class="hdr" style="padding:0 0 8px">About</div>${p.desc?'<div class="about">'+esc(p.desc)+'</div>':''}${cats}</div>`:''}
+   <div class="sect">
+     ${p.booth?`<div class="row">${IC.pin}<div>${p.booth.code?'Booth '+esc(p.booth.code)+', ':''}${hallName(p.booth.hall)}<br><span class="muted">Messe Bremen</span></div></div>`:''}
+     ${p.url?`<div class="row">${IC.globe}<a href="${esc(fixUrl(p.url))}" target="_blank" rel="noopener">${esc(p.url.replace(/^https?:\/\//,'').replace(/\/$/,''))}</a></div>`:''}
+     ${p.country?`<div class="row">${IC.flag}<div>${esc(p.country)}</div></div>`:''}
+   </div>
+   ${others.length?`<div class="sect"><div class="hdr" style="padding:0 0 4px">Also at this booth</div>${others.map(o=>`<div class="mini" data-id="${o.id}">${o.logo?`<img class="logo" style="object-fit:contain;background:#fff;border:1px solid #e8eaed" src="${esc(o.logo)}" alt="" loading="lazy">`:`<div class="logo">${esc(initials(o.name))}</div>`}<div style="flex:1;min-width:0"><div style="font-size:15px">${esc(o.name)}</div><div class="muted">${esc(o.cats[0]||o.country||'')}</div></div></div>`).join('')}</div>`:''}
+  `);
+  const q=id=>document.getElementById(id);
+  if(q('aDir'))q('aDir').onclick=()=>setDir(state.from===p?null:state.from,p,state.from===p);
+  if(q('aStart'))q('aStart').onclick=()=>{state.from=p;fieldFor=-1;toast('Start set to '+p.name);openPlace(p,false)};
+  if(q('aCopy'))q('aCopy').onclick=()=>{try{navigator.clipboard.writeText(p.name+' · Booth '+p.booth.code+' · '+hallName(p.booth.hall)).then(()=>toast('Copied'),()=>toast('Booth '+p.booth.code))}catch(e){toast('Booth '+p.booth.code)}};
+  body.querySelectorAll('.mini').forEach(el=>el.onclick=()=>openPlace(places.find(x=>x.id===el.dataset.id),false));
+  pushRecent(p);
+  if(fly&&p.booth){const bb=bbox(p.booths.flatMap(b=>b.img));const pad=320;fitBox(bb[0]-pad,bb[1]-pad,bb[2]+pad,bb[3]+pad)}
+  else render();
+}
+function closePlace(){explore()}
+function fixUrl(u){return /^https?:\/\//i.test(u)?u:'https://'+u}
+function bbox(pts){let a=1e9,b=1e9,c=-1e9,d=-1e9;for(const [x,y] of pts){a=Math.min(a,x);b=Math.min(b,y);c=Math.max(c,x);d=Math.max(d,y)}return[a,b,c,d]}
+
+/* ---------------- directions ---------------- */
+function setDir(from,to,pickTo){
+  state.mode='dir';state.from=from||null;state.to=to||null;
+  $('top').style.display='none';$('dir').classList.add('open');
+  $('fFromT').textContent=from?from.name+(from.booth?' ('+from.booth.code+')':''):'Choose start';
+  $('fToT').textContent=to?to.name+(to.booth?' ('+to.booth.code+')':''):'Choose destination';
+  $('fFromT').style.color=from?'':'var(--sub)';$('fToT').style.color=to?'':'var(--sub)';
+  if(!from||!to){overlay={sel:to,route:null,from:from};setSheet('<div class="ps" style="padding:8px 0 4px">'+(!from?'Choose where you are starting from.':'Choose where you want to go.')+'</div>');render();if(pickTo||!from)openSearch(!from?'from':'to');return}
+  if(from.booth===to.booth){overlay={sel:to,route:null,from};setSheet('<div class="pt">You are already there</div><div class="ps">'+esc(from.name)+' and '+esc(to.name)+' share booth '+esc(to.booth.code)+'.</div>');render();return}
+  const r=route(from.booth.k,to.booth.k);
+  if(!r){overlay={sel:to,route:null,from};setSheet('<div class="pt">No route found</div><div class="ps">Could not find a walking path between these booths on the plan.</div>');render();return}
+  overlay={sel:to,route:r,from};
+  // halls passed: sample along the path, ignore short clips of a hall (< ~15 m)
+  let runs=[];
+  for(const sg of r.segs)for(let t=0;t+1<sg.length;t++){const a=sg[t],b=sg[t+1];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const n=Math.max(1,Math.ceil(L/8));
+    for(let u=0;u<n;u++){const h=hallAt(a[0]+(b[0]-a[0])*u/n,a[1]+(b[1]-a[1])*u/n);const last=runs[runs.length-1];if(last&&last.h===h)last.l+=L/n;else runs.push({h,l:L/n})}}
+  const MIN=15/M_PER_PT*PX;
+  runs=runs.filter((x,i)=>i===0||i===runs.length-1||x.l>=MIN||x.h==='4.1');
+  const clean=[];for(const x of runs)if(clean[clean.length-1]!==x.h)clean.push(x.h);
+  const steps=[];
+  steps.push({ic:IC.start,t:'Leave '+esc(from.name),s:(from.booth.code?'Booth '+esc(from.booth.code)+' · ':'')+hallName(from.booth.hall)});
+  for(let i=1;i<clean.length;i++){
+    const a=clean[i-1],b=clean[i];
+    if(b==='4.1'&&a!=='4.1')steps.push({ic:IC.stairs,t:'Take the stairs up to the Upper Deck',s:'From the stairs at the back of Hall 4'});
+    else if(a==='4.1'&&b!=='4.1')steps.push({ic:IC.stairs,t:'Take the stairs down to Hall 4',s:'Stairs at the side of the Upper Deck'});
+    else steps.push({ic:IC.flagHall,t:'Continue into '+hallName(b),s:i===clean.length-1?'':'Walk through'});
+  }
+  steps.push({ic:IC.arrive,t:'Arrive at '+esc(to.name),s:(to.booth.code?'Booth '+esc(to.booth.code)+' · ':'')+hallName(to.booth.hall)});
+  const viaH=[...new Set(clean)].filter(h=>h!==from.booth.hall&&h!==to.booth.hall);
+  setSheet(`<div class="rtTime">${fmtMin(r.m)} <span>(${fmtDist(r.m)})</span></div>
+   <div class="ps">${viaH.length?'via '+viaH.map(hallName).join(', '):'Fastest walking route'}${r.stairs?' · includes stairs':''}</div>
+   <div class="acts"><button class="btn pri" id="dSteps">${IC.dir}Steps</button><button class="btn" id="dDest">${IC.pin}Destination info</button><button class="btn" id="dFit">${IC.walk}Show route</button></div>
+   <div class="sect" id="stepList">${steps.map(s=>`<div class="step">${s.ic}<div>${s.t}${s.s?'<small>'+s.s+'</small>':''}</div></div>`).join('')}</div>`);
+  $('dSteps').onclick=()=>{sheetExpanded=true;layoutSheet();$('stepList').scrollIntoView({behavior:'smooth'})};
+  $('dDest').onclick=()=>openPlace(to);
+  $('dFit').onclick=()=>fitRoute(r);
+  fitRoute(r);
+}
+function fitRoute(r){const bb=bbox(r.segs.flat());const pad=160;fitBox(bb[0]-pad,bb[1]-pad,bb[2]+pad,bb[3]+pad)}
+$('dirBack').onclick=()=>{state.from=state.from||home;state.to?openPlace(state.to):explore()};
+$('swap').onclick=()=>setDir(state.to,state.from);
+$('fFrom').onclick=()=>openSearch('from');
+$('fTo').onclick=()=>openSearch('to');
+
+/* ---------------- search ---------------- */
+let sTarget='place';
+function openSearch(target){
+  sTarget=target||'place';$('search').classList.add('open');
+  const ctx=$('sCtx');ctx.style.display=sTarget==='place'?'none':'block';ctx.textContent=sTarget==='from'?'Choose start point':'Choose destination';
+  $('q').value='';renderResults('');setTimeout(()=>$('q').focus(),50);
+}
+function closeSearch(){$('search').classList.remove('open');$('q').blur()}
+$('sbar').onclick=()=>openSearch('place');
+$('sBack').onclick=()=>{closeSearch();if(sTarget!=='place'&&state.mode==='dir'&&(!state.from||!state.to)&&!state.from)explore()};
+$('qClear').onclick=()=>{$('q').value='';renderResults('');$('q').focus()};
+$('q').addEventListener('input',()=>renderResults($('q').value));
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter'){const f=$('results').querySelector('.res');if(f)f.click()}});
+function score(p,q,words){
+  if(!q)return 0;let s=0;
+  const codeHit=p.codes.some(c=>norm(c)===q);if(codeHit)s+=1000;
+  if(p.n===q)s+=900;else if(p.n.startsWith(q))s+=600;
+  else if(words.every(w=>p.n.split(/[^a-z0-9]+/).some(t=>t.startsWith(w))))s+=400;
+  else if(p.n.includes(q))s+=250;
+  else if(p.codes.some(c=>norm(c).startsWith(q)))s+=200;
+  else if(words.every(w=>p.cn.includes(w)||p.n.includes(w)))s+=60;
+  else if(q.length>=4&&norm(p.desc).includes(q))s+=20;
+  return s;
+}
+function hl(name,q){if(!q)return esc(name);const n=norm(name);const i=n.indexOf(q);if(i<0)return esc(name);return esc(name.slice(0,i))+'<mark>'+esc(name.slice(i,i+q.length))+'</mark>'+esc(name.slice(i+q.length))}
+function resRow(p,q){
+  let m='';if(p.booth&&state.from&&state.from.booth&&sTarget!=='from'){field(state.from.booth.k);const d=metres(p.booth.k);if(isFinite(d))m=`<b>${fmtMin(d)}</b>${fmtDist(d)}`}
+  const sub=[p.booth&&p.booth.code?'Booth '+p.booth.code:'',p.booth?hallName(p.booth.hall):'Not on plan',p.cats[0]||''].filter(Boolean).map(esc).join(' · ');
+  return `<div class="res" data-id="${p.id}"><div class="ric">${p.logo?`<span class="ini">${esc(initials(p.name))}</span><img src="${esc(p.logo)}" alt="" loading="lazy" onerror="this.remove()">`:placeIcon(p)}</div><div class="rt"><div class="rn">${hl(p.name,q)}</div><div class="rs">${sub}</div></div><div class="rm">${m}</div></div>`;
+}
+function renderResults(raw){
+  const q=norm(raw).trim(),words=q.split(/\s+/).filter(Boolean);const R=$('results');
+  let html='';
+  if(!q){
+    const rec=getRecent().map(id=>places.find(p=>p.id===id)).filter(Boolean);
+    if(sTarget!=='place')html+=`<div class="hdr">Quick pick</div>`+resRow(home,'');
+    if(rec.length)html+=`<div class="hdr">Recent</div>`+rec.map(p=>resRow(p,'')).join('');
+    const fac=places.filter(p=>p.kind!=='ex'&&p.kind!=='booth');
+    html+=`<div class="hdr">Cafés, lounges and stages</div>`+fac.map(p=>resRow(p,'')).join('');
+  }else{
+    const list=places.map(p=>[score(p,q,words),p]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]||a[1].name.localeCompare(b[1].name)).slice(0,60);
+    html=list.length?list.map(x=>resRow(x[1],q)).join(''):`<div class="hdr" style="text-transform:none">No results for “${esc(raw)}”</div>`;
+  }
+  R.innerHTML=html;R.scrollTop=0;
+  R.querySelectorAll('.res').forEach(el=>el.onclick=()=>choose(places.find(p=>p.id===el.dataset.id)));
+}
+function choose(p){
+  closeSearch();
+  if(sTarget==='from'){if(!p.booth){toast('That one is not on the floor plan');return}setDir(p,state.to);}
+  else if(sTarget==='to'){if(!p.booth){toast('That one is not on the floor plan');return}setDir(state.from,p);}
+  else openPlace(p);
+}
+function getRecent(){return store.get('stex-recent',[])}
+function pushRecent(p){const r=getRecent().filter(x=>x!==p.id);r.unshift(p.id);store.set('stex-recent',r.slice(0,8))}
+
+/* chips */
+const CH=[['cafe','Cafés',IC.cafe],['lounge','Lounges',IC.sofa],['talk','Stages',IC.mic],['service','Services',IC.flag],...['1','2','4','4.1','5','6','7'].map(h=>['h'+h,'Hall '+h,IC.flagHall])];
+$('chips').innerHTML=CH.map(([k,l,i])=>`<button class="chip" data-k="${k}">${i}${l}</button>`).join('');
+$('chips').querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
+  const k=el.dataset.k;
+  if(k[0]==='h'){const h=k.slice(1);const bs=booths.filter(b=>b.hall===h);const bb=bbox(bs.flatMap(b=>b.img));fitBox(bb[0]-60,bb[1]-60,bb[2]+60,bb[3]+60);return}
+  const list=places.filter(p=>p.kind===k);
+  openSearch('place');const R=$('results');
+  R.innerHTML=`<div class="hdr">${esc(el.textContent)}</div>`+list.map(p=>resRow(p,'')).join('');
+  R.querySelectorAll('.res').forEach(e2=>e2.onclick=()=>choose(places.find(p=>p.id===e2.dataset.id)));
+});
+$('fabHome').onclick=()=>{const f=state.from||home;if(f.booth)centerOn(f.booth.ic,0.6)};
+$('fabFit').onclick=()=>fitAll();
+
+/* ---------------- boot ---------------- */
+function boot(){
+  minS=Math.min(vw()/IMW,vh()/IMH)*0.9;
+  explore();fitAll(false);
+  setTimeout(()=>{field(home.booth.k);$('loading').remove();
+    const h=location.hash.slice(1);if(h){const b=byCode[h.toUpperCase()];if(b&&b.places[0])openPlace(b.places[0])}
+  },30);
+}
+const img=$('mapimg');if(img.complete)boot();else{img.onload=boot;img.onerror=boot}
+})();
+</script>
+</body>
+</html>
