@@ -165,6 +165,9 @@ mark{background:none;color:var(--txt);font-weight:700}
 #leave{position:fixed;left:12px;right:12px;z-index:22;display:none;align-items:center;gap:8px;background:#d93025;color:#fff;border-radius:12px;padding:10px 8px 10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.3);max-width:560px;cursor:pointer}
 #leave .lv{flex:1;min-width:0}.lvt{font-size:15px;line-height:20px}.lvs{font-size:13px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lvx{color:#fff;width:32px;height:32px;font-size:16px;flex:none}
+
+.smk{color:#f9ab00;font-size:18px;line-height:18px;transform:translate(-50%,-50%);text-shadow:0 0 2px #fff,0 0 2px #fff,0 1px 3px rgba(0,0,0,.4)}
+.rstar{color:#f9ab00;margin-right:4px}
 </style>
 </head>
 <body>
@@ -240,6 +243,9 @@ const IC={
  arrive:'<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>',
  refresh:'<svg class="i" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',
  people:'<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
+ star:'<svg viewBox="0 0 24 24"><path d="m22 9.24-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>',
+ starOn:'<svg viewBox="0 0 24 24" style="color:#f9ab00"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>',
+ share:'<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>',
  history:'<svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>',
 };
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -276,6 +282,19 @@ function buildPlaces(){
   places.forEach(p=>p.booths.forEach(b=>b.places.push(p)));
 }
 buildPlaces();
+/* stars (kept on this phone; shareable as a link to back them up) */
+const skey=p=>key(p.name)+(p.booth&&p.booth.code?'@'+p.booth.code:'');
+let stars=new Set(store.get('stex-stars',[]));
+const isStar=p=>stars.has(skey(p));
+function setStar(p,on){const k=skey(p);on?stars.add(k):stars.delete(k);store.set('stex-stars',[...stars]);render()}
+const starredPlaces=()=>places.filter(p=>p.booth&&isStar(p));
+function placeLink(p){const b=p.booth;if(!b)return location.origin+location.pathname;const code=b.code||((b.name.match(/\((\w+)\)\s*$/)||[])[1])||'';const i=b.places.indexOf(p);return location.origin+location.pathname+'#'+encodeURIComponent(code)+(i>0?'.'+i:'')}
+function starsLink(){const codes=starredPlaces().map(p=>{const i=p.booth.places.indexOf(p);return p.booth.code+(i>0?'.'+i:'')}).filter(Boolean);return location.origin+location.pathname+'#s:'+codes.join(',')}
+function placeFromRef(ref){const [c,i]=String(ref).split('.');const b=byCode[decodeURIComponent(c).toUpperCase()];return b?(b.places[+i||0]||b.places[0]):null}
+async function shareOrCopy(url,title,text){
+  try{if(navigator.share){await navigator.share({title,text,url});return}}catch(e){if(e&&e.name==='AbortError')return}
+  try{await navigator.clipboard.writeText(url);toast('Link copied')}catch(e){toast(url)}
+}
 const hallName=h=>h==='4.1'?'Hall 4.1 (Upper Deck)':'Hall '+h;
 
 /* ---------------- grid + pathfinding ---------------- */
@@ -430,6 +449,7 @@ function drawOverlay(){
     if(r.stairs)for(const s of r.stairs)addMk(s,'<div class="stair">'+IC.stairs+'</div>');
   }
   if(overlay.multi){for(const p of overlay.multi){for(const b of p.booths){const pg=document.createElementNS(ns,'polygon');pg.setAttribute('points',b.img.map(q=>toScr(q).join(',')).join(' '));pg.setAttribute('fill','rgba(234,67,53,.18)');pg.setAttribute('stroke','#ea4335');pg.setAttribute('stroke-width','1.5');gB.appendChild(pg)}addMk(p.booth.ic,'<div class="mdot"></div>')}}
+  for(const p of starredPlaces())addMk(p.booth.ic,'<div class="smk">★</div>');
   if(overlay.from)addMk(overlay.from.booth.ic,'<div class="dot halo"></div>');
   if(state.mode!=='dir')drawTeam();
   if(sel&&sel.booth)addMk(sel.booth.ic,'<div class="pin"><svg width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z" fill="#ea4335"/><path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z" fill="none" stroke="#b31412" stroke-width="1"/><circle cx="14" cy="14" r="5" fill="#b31412"/></svg></div>');
@@ -541,7 +561,8 @@ function openPlace(p,fly=true){
      ${p.booth?`<button class="btn pri" id="aDir">${IC.dir}Directions</button>`:''}
      ${p.booth&&!isFrom?`<button class="btn" id="aStart">${IC.start}Start here</button>`:''}
      ${p.url?`<a class="btn" href="${esc(fixUrl(p.url))}" target="_blank" rel="noopener">${IC.web}Website</a>`:''}
-     ${p.booth?`<button class="btn" id="aCopy">${IC.copy}Copy booth</button>`:''}
+     ${p.booth?`<button class="btn" id="aStar">${isStar(p)?IC.starOn:IC.star}${isStar(p)?'Starred':'Star'}</button>`:''}
+     ${p.booth?`<button class="btn" id="aShare">${IC.share}Share</button>`:''}
    </div>
    ${p.desc||cats?`<div class="sect"><div class="hdr" style="padding:0 0 8px">About</div>${p.desc?'<div class="about">'+esc(p.desc)+'</div>':''}${cats}</div>`:''}
    <div class="sect">
@@ -554,7 +575,8 @@ function openPlace(p,fly=true){
   const q=id=>document.getElementById(id);
   if(q('aDir'))q('aDir').onclick=()=>setDir(state.from===p?null:state.from,p,state.from===p);
   if(q('aStart'))q('aStart').onclick=()=>{state._from=p;fieldFor=-1;toast('Start set to '+p.name);openPlace(p,false)};
-  if(q('aCopy'))q('aCopy').onclick=()=>{try{navigator.clipboard.writeText(p.name+' · Booth '+p.booth.code+' · '+hallName(p.booth.hall)).then(()=>toast('Copied'),()=>toast('Booth '+p.booth.code))}catch(e){toast('Booth '+p.booth.code)}};
+  if(q('aStar'))q('aStar').onclick=()=>{const on=!isStar(p);setStar(p,on);toast(on?'Starred':'Removed from starred');openPlace(p,false)};
+  if(q('aShare'))q('aShare').onclick=()=>shareOrCopy(placeLink(p),p.name,p.name+' · '+(p.booth.code?'Booth '+p.booth.code+', ':'')+hallName(p.booth.hall));
   body.querySelectorAll('.mini').forEach(el=>el.onclick=()=>openPlace(places.find(x=>x.id===el.dataset.id),false));
   pushRecent(p);
   if(fly&&p.booth){const bb=bbox(p.booths.flatMap(b=>b.img));const pad=320;fitBox(bb[0]-pad,bb[1]-pad,bb[2]+pad,bb[3]+pad)}
@@ -683,7 +705,8 @@ function resRow(p,q){
   let m='';if(p.booth&&state.from&&state.from.booth&&sTarget!=='from'){field(state.from.booth.k);const d=metres(p.booth.k);if(isFinite(d))m=`<b>${fmtMin(d)}</b>${fmtDist(d)}`}
   const sub=[p.booth&&p.booth.code?'Booth '+p.booth.code:'',p.booth?hallName(p.booth.hall):'Not on plan',p.cats[0]||''].filter(Boolean).map(esc).join(' · ');
   const why=p._why?`<div class="rw">${esc(p._why)}</div>`:'';
-  return `<div class="res" data-id="${p.id}"><div class="ric">${p.logo?`<span class="ini">${esc(initials(p.name))}</span><img src="${esc(p.logo)}" alt="" loading="lazy" onerror="this.remove()">`:placeIcon(p)}</div><div class="rt"><div class="rn">${hl(p.name,q)}</div><div class="rs">${sub}</div>${why}</div><div class="rm">${m}</div></div>`;
+  const st=isStar(p)?'<span class="rstar">★</span>':'';
+  return `<div class="res" data-id="${p.id}"><div class="ric">${p.logo?`<span class="ini">${esc(initials(p.name))}</span><img src="${esc(p.logo)}" alt="" loading="lazy" onerror="this.remove()">`:placeIcon(p)}</div><div class="rt"><div class="rn">${st}${hl(p.name,q)}</div><div class="rs">${sub}</div>${why}</div><div class="rm">${m}</div></div>`;
 }
 function renderResults(raw){
   const q=norm(raw).trim(),words=q.split(/\s+/).filter(Boolean);const R=$('results');
@@ -709,16 +732,24 @@ function renderResults(raw){
   R.querySelectorAll('.res').forEach(el=>el.onclick=()=>choose(places.find(p=>p.id===el.dataset.id)));
   if($('showAll'))$('showAll').onclick=()=>{const t=lastTopic;afterSearch(()=>openResults(t.q,t.list))};
 }
-function openResults(q,list){
-  nav(()=>openResults(q,list));
+function openStarred(){
+  const list=starredPlaces();
+  if(!list.length){toast('Tap Star on a company to add it here');return}
+  openResults('Starred',list,{starred:true});
+}
+function openResults(q,list,opt={}){
+  nav(()=>opt.starred?openStarred():openResults(q,list,opt),{replaceTop:state.mode==='results'&&opt.starred});
   state.mode='results';
   $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
   $('sbarTxt').textContent=q;$('sbarTxt').classList.add('val');
   overlay={sel:null,route:null,from:state.from,multi:list};
   const bb=bbox(list.flatMap(p=>p.booth.img));fitBox(bb[0]-120,bb[1]-120,bb[2]+120,bb[3]+120);
   sTarget='place';
-  setSheet(`<div class="pt" style="margin:0">${list.length} companies for “${esc(q)}”</div><div class="muted" style="margin-bottom:6px">Red dots on the map. Matched on products, categories and descriptions from the exhibitor list.</div>${list.map(p=>resRow(p,'')).join('')}`);
+  setSheet(opt.starred
+    ?`<div class="pt" style="margin:0">${list.length} starred</div><div class="muted">Saved on this phone only. Share the link to back it up or send it to the team; opening the link adds these stars.</div><div class="acts"><button class="btn pri" id="stShare">${IC.share}Share starred list</button></div>${list.map(p=>resRow(p,'')).join('')}`
+    :`<div class="pt" style="margin:0">${list.length} companies for “${esc(q)}”</div><div class="muted" style="margin-bottom:6px">Red dots on the map. Matched on products, categories and descriptions from the exhibitor list.</div>${list.map(p=>resRow(p,'')).join('')}`);
   body.querySelectorAll('.res').forEach(el=>el.onclick=()=>openPlace(places.find(p=>p.id===el.dataset.id)));
+  if($('stShare'))$('stShare').onclick=()=>shareOrCopy(starsLink(),'My starred booths',list.length+' starred booths at Space Tech Expo Europe');
 }
 function choose(p){afterSearch(()=>choose2(p))}
 function choose2(p){
@@ -730,12 +761,13 @@ function getRecent(){return store.get('stex-recent',[])}
 function pushRecent(p){const r=getRecent().filter(x=>x!==p.id);r.unshift(p.id);store.set('stex-recent',r.slice(0,8))}
 
 /* chips */
-const CH=[['me','My day',IC.history],['team','Team now',IC.people],['cafe','Cafés',IC.cafe],['lounge','Lounges',IC.sofa],['talk','Stages',IC.mic],['service','Services',IC.flag],...['1','2','4','4.1','5','6','7'].map(h=>['h'+h,'Hall '+h,IC.flagHall])];
+const CH=[['me','My day',IC.history],['team','Team now',IC.people],['star','Starred',IC.starOn],['cafe','Cafés',IC.cafe],['lounge','Lounges',IC.sofa],['talk','Stages',IC.mic],['service','Services',IC.flag],...['1','2','4','4.1','5','6','7'].map(h=>['h'+h,'Hall '+h,IC.flagHall])];
 $('chips').innerHTML=CH.map(([k,l,i])=>`<button class="chip" data-k="${k}">${i}${l}</button>`).join('');
 $('chips').querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
   const k=el.dataset.k;
   if(k==='me'){openSchedule(me);return}
   if(k==='team'){openTeam();return}
+  if(k==='star'){openStarred();return}
   if(k[0]==='h'){const h=k.slice(1);const bs=booths.filter(b=>b.hall===h);const bb=bbox(bs.flatMap(b=>b.img));fitBox(bb[0]-60,bb[1]-60,bb[2]+60,bb[3]+60);return}
   const list=places.filter(p=>p.kind===k);
   openSearch('place');const R=$('results');
@@ -1054,6 +1086,16 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 setInterval(()=>{if(state.mode==='explore'||state.mode==='team'||state.mode==='sched')rosterChanged();updateLeave()},30000);
 (()=>{const c=store.get('stex-roster',null);if(c){roster=c;rosterAt=c.at||0}})();
 
+/* links: #J28 opens a booth, #s:J28,C42 adds starred booths */
+function handleHash(){
+  const h=decodeURIComponent(location.hash.slice(1));if(!h)return;
+  try{history.replaceState(history.state,'',location.pathname)}catch(e){}
+  if(h.startsWith('s:')){const ps=h.slice(2).split(',').map(placeFromRef).filter(Boolean);let n=0;ps.forEach(p=>{if(!isStar(p)){stars.add(skey(p));n++}});store.set('stex-stars',[...stars]);toast(n?'Added '+n+' starred booth'+(n>1?'s':''):'Those booths were already starred');if(ps.length)openStarred();return}
+  const p=placeFromRef(h);if(p)openPlace(p);else toast('Booth '+h+' not found');
+}
+window.addEventListener('hashchange',handleHash);
+/* offline: cache the app so it opens without signal (roster falls back to the last copy) */
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 /* ---------------- boot ---------------- */
 function boot(){
   minS=Math.min(vw()/IMW,vh()/IMH)*0.9;
@@ -1061,7 +1103,7 @@ function boot(){
   explore();fitAll(false);
   loadRoster();
   setTimeout(()=>{field(home.booth.k);$('loading').remove();
-    const h=location.hash.slice(1);if(h){const b=byCode[h.toUpperCase()];if(b&&b.places[0])openPlace(b.places[0])}
+    handleHash();
   },30);
 }
 const img=$('mapimg');if(img.complete)boot();else{img.onload=boot;img.onerror=boot}
