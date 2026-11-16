@@ -122,6 +122,30 @@ mark{background:none;color:var(--txt);font-weight:700}
 #toast{position:fixed;left:50%;bottom:calc(var(--sab) + 140px);transform:translateX(-50%);background:#323232;color:#fff;padding:10px 16px;border-radius:6px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
 #toast.on{opacity:1}
 #loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;padding:12px 18px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:14px;z-index:70}
+
+.nowc{background:#f8f9fa;border-radius:12px;padding:12px;margin:2px 0 14px;cursor:pointer}
+.nowh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.avs{width:28px;height:28px;border-radius:50%;background:#7b1fa2;color:#fff;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex:none}
+.nowb{display:flex;gap:10px;align-items:flex-start;padding:4px 0}
+.nowb.nxt{opacity:.85}
+.nt{font-size:15px;font-weight:500;line-height:20px}
+.nt2{font-size:14px;line-height:19px}
+.sw{display:inline-block;width:14px;height:14px;border-radius:4px;border:2px solid;flex:none;margin-top:3px}
+.schedh{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.dtabs{display:flex;gap:8px;overflow-x:auto;margin:12px -16px 8px;padding:0 16px;scrollbar-width:none}
+.dtabs::-webkit-scrollbar{display:none}
+.dtab{flex:none;height:32px;padding:0 14px;border-radius:16px;border:1px solid var(--line);font-size:14px;color:#3c4043;white-space:nowrap}
+.dtab.on{background:#e8f0fe;border-color:#e8f0fe;color:var(--blue-d);font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub);margin:4px 0 6px}
+.legend span{display:flex;align-items:center;gap:5px}.legend .sw{margin:0;width:12px;height:12px}
+.blk{display:flex;gap:12px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid #f1f3f4;cursor:pointer}
+.blk.now{background:#e8f0fe;border-radius:8px}
+.blk .bt{width:44px;flex:none;font-size:14px;font-weight:500;line-height:18px}
+.blk .bt small{display:block;font-weight:400;color:var(--sub);font-size:12px}
+.bx{min-width:0}
+.nowtag{font-size:11px;background:var(--blue);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:2px}
+.btn.sm{height:32px;padding:0 12px}
+#me{border:0;cursor:pointer}
 </style>
 </head>
 <body>
@@ -132,7 +156,7 @@ mark{background:none;color:var(--txt);font-weight:700}
   <div class="searchbar" id="sbar">
     <svg class="i" viewBox="0 0 24 24" style="color:var(--sub)"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
     <div class="ph" id="sbarTxt">Search exhibitors or booths</div>
-    <div class="avatar" title="Home base: ANT61">A</div>
+    <button class="avatar" id="me" title="Choose who you are" aria-label="Choose who you are">?</button>
   </div>
   <div class="chips" id="chips"></div>
 </div>
@@ -194,6 +218,8 @@ const IC={
  store:'<svg viewBox="0 0 24 24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>',
  flagHall:'<svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z"/></svg>',
  arrive:'<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>',
+ refresh:'<svg class="i" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',
+ people:'<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
  history:'<svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>',
 };
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -204,6 +230,7 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v)
 /* ---------------- data: booths + places ---------------- */
 const booths=E.booths.map((b,k)=>({...b,k,img:b.poly.map(([x,y])=>[(x-X0)*PX,(y-Y0)*PX]),ic:[(b.c[0]-X0)*PX,(b.c[1]-Y0)*PX]}));
 const byCode={};booths.forEach(b=>{if(b.code)byCode[b.code.toUpperCase()]=b});
+booths.forEach(b=>{const m=String(b.name).match(/\((\w+)\)\s*$/);if(m&&!byCode[m[1].toUpperCase()])byCode[m[1].toUpperCase()]=b});
 const key=s=>norm(s).replace(/[^a-z0-9]/g,'');
 const featureKind=n=>{n=norm(n);if(/cafe|café/.test(n))return'cafe';if(/lounge|break|recharge|social/.test(n))return'lounge';if(/conference|forum|stage|theatre|theater/.test(n))return'talk';if(/registration|badge|service desk|lead retrieval|matchmaking|prep room/.test(n))return'service';return null};
 let places=[];
@@ -426,11 +453,12 @@ function explore(){
   $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
   $('sbarTxt').textContent='Search exhibitors or booths';$('sbarTxt').classList.remove('val');
   const nEx=places.filter(p=>p.kind==='ex').length;
-  setSheet(`<div class="peekTitle">Space Tech Expo Europe 2026</div>
+  setSheet(`${nowCardHtml()}<div class="peekTitle">Space Tech Expo Europe 2026</div>
    <div class="ps">Messe Bremen · Halls 1, 2, 4, 4.1, 5, 6, 7${nEx?' · '+nEx+' exhibitors':''}</div>
    <div class="acts"><button class="btn pri" id="goHome">${IC.start}Start: ${esc(home.name)} ${home.booth?'('+esc(home.booth.code)+')':''}</button><button class="btn" id="goDir">${IC.dir}Directions</button></div>
    <div class="muted">Tap any booth or search to see where it is and how long the walk is. Times assume an easy ${WALK} m/s walking pace.</div>`);
   $('goHome').onclick=()=>openPlace(home);$('goDir').onclick=()=>setDir(state.from||home,null,true);
+  bindNowCard();
   render();
 }
 function openPlace(p,fly=true){
@@ -571,10 +599,12 @@ function getRecent(){return store.get('stex-recent',[])}
 function pushRecent(p){const r=getRecent().filter(x=>x!==p.id);r.unshift(p.id);store.set('stex-recent',r.slice(0,8))}
 
 /* chips */
-const CH=[['cafe','Cafés',IC.cafe],['lounge','Lounges',IC.sofa],['talk','Stages',IC.mic],['service','Services',IC.flag],...['1','2','4','4.1','5','6','7'].map(h=>['h'+h,'Hall '+h,IC.flagHall])];
+const CH=[['me','My day',IC.history],['team','Team now',IC.people],['cafe','Cafés',IC.cafe],['lounge','Lounges',IC.sofa],['talk','Stages',IC.mic],['service','Services',IC.flag],...['1','2','4','4.1','5','6','7'].map(h=>['h'+h,'Hall '+h,IC.flagHall])];
 $('chips').innerHTML=CH.map(([k,l,i])=>`<button class="chip" data-k="${k}">${i}${l}</button>`).join('');
 $('chips').querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
   const k=el.dataset.k;
+  if(k==='me'){openSchedule(me);return}
+  if(k==='team'){openTeam();return}
   if(k[0]==='h'){const h=k.slice(1);const bs=booths.filter(b=>b.hall===h);const bb=bbox(bs.flatMap(b=>b.img));fitBox(bb[0]-60,bb[1]-60,bb[2]+60,bb[3]+60);return}
   const list=places.filter(p=>p.kind===k);
   openSearch('place');const R=$('results');
@@ -584,10 +614,257 @@ $('chips').querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
 $('fabHome').onclick=()=>{const f=state.from||home;if(f.booth)centerOn(f.booth.ic,0.6)};
 $('fabFit').onclick=()=>fitAll();
 
+/* ---------------- team roster (live from Google Sheet) ---------------- */
+const SHEET_ID='1YXRmqrIiXkVeqkQsAsoG0wIQfgCNxevCLNN5eVZ2Kcw';
+const SHEET_URL='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit';
+const TZ='Europe/Berlin';
+const CAT={
+  booth:{l:'At the booth',sw:'#d9ead3',bd:'#34a853'},
+  setup:{l:'Booth setup',sw:'#666666',bd:'#444'},
+  roam:{l:'Rounds: visit other booths',sw:'#d9d2e9',bd:'#8e7cc3'},
+  brk:{l:'Break',sw:'#fff2cc',bd:'#f1c232'},
+  prep:{l:'Meeting prep / debrief',sw:'#b7b7b7',bd:'#888'},
+  meet:{l:'Meeting',sw:'#ff9900',bd:'#e69138'},
+  event:{l:'Event',sw:'#ffff00',bd:'#bf9000'},
+  na:{l:'Not available',sw:'#999999',bd:'#777'},
+  free:{l:'Nothing scheduled',sw:'#ffffff',bd:'#dadce0'},
+  other:{l:'Scheduled',sw:'#e8eaed',bd:'#9aa0a6'},
+};
+let roster=null, rosterErr='', rosterAt=0, rosterBusy=false;
+let me=store.get('stex-me',null);
+function catFromLabel(t){t=norm(t);if(/setup|set up/.test(t))return'setup';if(/booth/.test(t))return'booth';if(/round/.test(t))return'roam';if(/break|lunch/.test(t))return'brk';if(/prep|debrief/.test(t))return'prep';if(/meeting/.test(t))return'meet';if(/event/.test(t))return'event';return null}
+function hexHsl(h){const m=/^#?([0-9a-f]{6})$/i.exec(h||'');if(!m)return null;const n=parseInt(m[1],16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let hh=0,s=0;if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);hh=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;hh*=60}return{h:hh,s,l}}
+function catFromColor(c,legend,text){
+  c=(c||'').toLowerCase();
+  if(!c||c==='#ffffff')return text?'other':'free';
+  if(legend[c])return legend[c];
+  const x=hexHsl(c);if(!x)return'other';
+  if(x.s<0.08)return /^n\/?a$/i.test(text.trim())?'na':(text?'other':'na');
+  if(x.h>=75&&x.h<=165)return'booth';            // green
+  if(x.h>=240&&x.h<=320)return'roam';            // purple
+  if(x.h>=20&&x.h<=60&&x.l>=0.8)return'brk';     // skin / peach / cream
+  if(x.h>=20&&x.h<=45)return'meet';
+  if(x.h>45&&x.h<=65)return'event';
+  return'other';
+}
+async function fetchText(u){const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}
+function parseGrid(html){
+  const d=new DOMParser().parseFromString(html,'text/html');
+  const css=[...d.querySelectorAll('style')].map(s=>s.textContent).join('\n');const bg={};
+  for(const m of css.matchAll(/\.(s\d+)\{([^}]*)\}/g)){const b=m[2].match(/background-color:([^;]+)/);if(b)bg[m[1]]=b[1].trim().toLowerCase()}
+  const G=[];
+  [...d.querySelectorAll('table tbody tr')].forEach((tr,r)=>{G[r]=G[r]||[];let c=0;
+    for(const td of tr.querySelectorAll('td')){if(td.classList.contains('freezebar-cell'))continue;while(G[r][c])c++;
+      const rs=+td.rowSpan||1,cs=+td.colSpan||1;const cell={t:td.textContent.replace(/\s+/g,' ').trim(),b:bg[[...td.classList].find(x=>/^s\d+$/.test(x))]||''};
+      for(let i=0;i<rs;i++)for(let j=0;j<cs;j++){G[r+i]=G[r+i]||[];G[r+i][c+j]=cell}c+=cs}});
+  return G;
+}
+const TIME_RE=/^(\d{1,2})[:.](\d{2})\s*[-–]\s*(\d{1,2})[:.](\d{2})/;
+function parseDay(name,G){
+  const dm=/(\d{1,2})\/(\d{1,2})/.exec(name);if(!dm)return null;
+  const h=G.findIndex(r=>r&&r[0]&&!TIME_RE.test(r[0].t)&&r.slice(1,4).filter(c=>c&&c.t).length>=2);if(h<0)return null;
+  const hdr=G[h];const people=[];
+  for(let c=1;c<hdr.length;c++){const t=hdr[c]&&hdr[c].t;if(!t||/^events?$/i.test(t)||/meeting/i.test(t))break;people.push({name:t,col:c})}
+  const legend={};
+  for(let c=1;c<hdr.length;c++){const x=hdr[c];if(!x||!x.t||!x.b||x.b==='#ffffff')continue;const k=catFromLabel(x.t);if(k&&(/^(rounds|at the booth|break|meeting prep|booth setup)/i.test(x.t)))legend[x.b]=k}
+  const slots=[];
+  for(let r=h+1;r<G.length;r++){const row=G[r];if(!row||!row[0])continue;const m=TIME_RE.exec(row[0].t);if(!m)continue;slots.push({r,s:(+m[1])*60+(+m[2]),e:(+m[3])*60+(+m[4])})}
+  return{name,label:name.split(/\s+/)[0],dd:+dm[1],mm:+dm[2],hdr:h,people,legend,slots,G};
+}
+function buildBlocks(day,legend){
+  const out={};
+  for(const p of day.people){
+    const bl=[];
+    for(const s of day.slots){
+      const cell=day.G[s.r][p.col]||{t:'',b:''};const cat=catFromColor(cell.b,legend,cell.t);
+      const last=bl[bl.length-1];
+      const cont=last&&last.e===s.s&&last.color===(cell.b||'')&&(last.text===cell.t||(!cell.t&&!['meet','event'].includes(cat)));
+      if(cont)last.e=s.e;else bl.push({s:s.s,e:s.e,cat,color:cell.b||'',text:cell.t});
+    }
+    out[norm(p.name)]=bl.filter(b=>!(b.cat==='free'&&!b.text));
+  }
+  return out;
+}
+async function loadRoster(force){
+  if(rosterBusy)return;rosterBusy=true;
+  try{
+    const html=await fetchText('https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/htmlview');
+    const items=[...html.matchAll(/name: "([^"]+)",[^}]*?gid: "(\d+)"/g)].map(x=>({name:x[1].replace(/\\\//g,'/').replace(/\\x([0-9a-f]{2})/gi,(_,h)=>String.fromCharCode(parseInt(h,16))),gid:x[2]}));
+    const dayItems=items.filter(i=>/^\D{2,}\s*\d{1,2}\/\d{1,2}\s*$/.test(i.name.trim()));
+    if(!dayItems.length)throw new Error('No day tabs found');
+    const days=[];
+    for(const it of dayItems){const G=parseGrid(await fetchText('https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/htmlview/sheet?headers=false&gid='+it.gid));const d=parseDay(it.name,G);if(d)days.push(d)}
+    const legend={};days.forEach(d=>Object.assign(legend,d.legend));
+    const names=[];days.forEach(d=>d.people.forEach(p=>{if(!names.some(n=>norm(n)===norm(p.name)))names.push(p.name)}));
+    const out={names,legend,at:Date.now(),days:days.map(d=>({name:d.name,label:d.label,dd:d.dd,mm:d.mm,blocks:buildBlocks(d,legend)}))};
+    out.days.sort((a,b)=>a.mm-b.mm||a.dd-b.dd);
+    roster=out;rosterErr='';rosterAt=Date.now();store.set('stex-roster',out);
+  }catch(e){
+    rosterErr=e.message||'error';if(!roster){const c=store.get('stex-roster',null);if(c)roster=c}
+  }finally{rosterBusy=false}
+  rosterChanged();
+}
+function rosterChanged(){
+  $('me').textContent=me?initials(me):'?';$('me').style.background=me?'#7b1fa2':'#9aa0a6';
+  if(state.mode==='explore')explore();
+  else if(state.mode==='sched')openSchedule(state.schedWho,state.schedDay,true);
+  else if(state.mode==='team')openTeam(true);
+}
+/* time in Berlin */
+function berlinNow(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{y:+p.year,mm:+p.month,dd:+p.day,min:(+p.hour)*60+(+p.minute)}}
+const hm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+function todayIdx(){if(!roster)return-1;const n=berlinNow();return roster.days.findIndex(d=>d.dd===n.dd&&d.mm===n.mm)}
+function defaultDay(){if(!roster||!roster.days.length)return 0;const t=todayIdx();if(t>=0)return t;const n=berlinNow();const i=roster.days.findIndex(d=>d.mm>n.mm||(d.mm===n.mm&&d.dd>n.dd));return i>=0?i:roster.days.length-1}
+function blocksFor(who,di){if(!roster||!who)return[];const d=roster.days[di];return d?(d.blocks[norm(who)]||[]):[]}
+function nowFor(who){
+  const t=todayIdx();const n=berlinNow();
+  if(t>=0){const bl=blocksFor(who,t);const cur=bl.find(b=>b.s<=n.min&&n.min<b.e)||null;const next=bl.find(b=>b.s>=(cur?cur.e:n.min)&&b.cat!=='free')||null;return{day:t,cur,next,today:true}}
+  const d=defaultDay();const bl=blocksFor(who,d);return{day:d,cur:null,next:bl.find(b=>b.cat!=='free')||null,today:false};
+}
+/* where a block happens */
+function findCompany(s){
+  const k=key(s);if(k.length<3)return null;
+  let best=null,bs=0;
+  for(const p of places){if(!p.booth)continue;const pk=key(p.name);let sc=0;
+    if(pk===k)sc=100;else if(pk.startsWith(k)&&k.length>=4)sc=80;else if(k.startsWith(pk)&&pk.length>=4)sc=70;else if(k.length>=5&&pk.includes(k))sc=50;
+    if(p.kind==='ex')sc+=1;if(sc>bs){bs=sc;best=p}}
+  return bs>=50?best:null;
+}
+function hallIn(t){const m=/\b(?:hall|h)\s*(4\.1|[1-7])\b/i.exec(t)||/\b(4\.1)\b/.exec(t);return m?m[1]:(/upper deck/i.test(t)?'4.1':null)}
+function placeFor(b){
+  const t=b.text||'';
+  if(b.cat==='booth'||b.cat==='setup')return{places:[home],label:home.name+' booth'+(home.booth?' ('+home.booth.code+')':'')};
+  if(!t)return null;
+  if(/\b(our|out)\s+booth\b|ant61/i.test(t))return{places:[home],label:home.name+' booth'+(home.booth?' ('+home.booth.code+')':'')};
+  const inner=(t.match(/\(([^)]*)\)/)||[])[1]||'';
+  const hall=hallIn(inner)||hallIn(t);
+  // explicit booth codes
+  for(const m of t.toUpperCase().matchAll(/\b([A-Z]{1,3}\d{1,3}|\d{4})\b/g)){const c=m[1];if(/^H[1-7]$/.test(c))continue;const bo=byCode[c];if(bo&&bo.places[0])return{places:[bo.places[0]],label:(bo.code?'Booth '+bo.code+', ':'')+hallName(bo.hall)}}
+  // B2B tables
+  if(/\btable\b/i.test(t)&&hall){const mm=booths.find(x=>x.hall===hall&&/matchmaking/i.test(x.name));if(mm&&mm.places[0])return{places:[mm.places[0]],label:(inner||t)+' · B2B matchmaking area',hall}}
+  // company names (rounds can list several)
+  const head=t.replace(/\([^)]*\)/g,' ').replace(/\b\d{1,2}[:.]\d{2}\b/g,' ').replace(/^\s*H\s*(4\.1|[1-7])\b/i,' ').replace(/\bH\s*(4\.1|[1-7])\b/gi,' ');
+  const found=[];for(const part of head.split(/,|\/|&|\band\b/i)){const p=findCompany(part.trim());if(p&&!found.includes(p))found.push(p)}
+  if(found.length)return{places:found,label:found.length>1?found.length+' booths':(found[0].booth.code?'Booth '+found[0].booth.code+', ':'')+hallName(found[0].booth.hall)};
+  if(hall)return{places:[],hall,label:(inner||hallName(hall))};
+  return null;
+}
+function blockTitle(b){const c=CAT[b.cat]||CAT.other;if(b.cat==='meet'||b.cat==='event')return b.text||c.l;if(b.cat==='na')return'Not available';if((b.cat==='roam'||b.cat==='other'||b.cat==='free')&&b.text)return(b.cat==='roam'?'Rounds: ':'')+b.text;return c.l}
+function blockWhere(b){
+  if(b.cat==='roam')return'Anywhere on the show floor, talking to other booths';
+  if(b.cat==='brk')return'Anywhere. Take a break';
+  if(b.cat==='prep')return b.text||'';
+  const pl=placeFor(b);return pl?pl.label:'';
+}
+function swatch(b){const c=CAT[b.cat]||CAT.other;const col=b.color&&b.color!=='#ffffff'?b.color:c.sw;return`<i class="sw" style="background:${esc(col)};border-color:${c.bd}"></i>`}
+function rosterStatusLine(){
+  if(rosterBusy&&!roster)return'Loading roster…';
+  const ago=roster?Math.max(0,Math.round((Date.now()-(roster.at||rosterAt))/60000)):0;
+  if(rosterErr)return(roster?'Offline: showing roster saved '+ago+' min ago':'Could not load the roster ('+esc(rosterErr)+')');
+  return roster?'Live from the team roster · updated '+(ago<1?'just now':ago+' min ago'):'';
+}
+function nowCardHtml(){
+  if(!roster&&!rosterErr)return`<div class="nowc muted">Loading team roster…</div>`;
+  if(!me)return`<div class="nowc"><div class="ps"><b>Which team member are you?</b></div><div class="acts" style="margin-top:8px"><button class="btn pri" data-act="pick">${IC.start}Choose me</button><button class="btn" data-act="team">Team now</button></div></div>`;
+  const n=nowFor(me);const b=n.cur,nx=n.next;
+  let h=`<div class="nowc" data-act="mine"><div class="nowh"><span class="avs">${esc(initials(me))}</span><b>${esc(me)}</b><span class="muted">${n.today?'right now':'next: '+esc(roster.days[n.day]?roster.days[n.day].name:'')}</span></div>`;
+  if(b&&b.cat!=='free'){h+=`<div class="nowb">${swatch(b)}<div><div class="nt">${esc(blockTitle(b))}</div><div class="muted">${hm(b.s)}–${hm(b.e)}${blockWhere(b)?' · '+esc(blockWhere(b)):''}</div></div></div>`}
+  else if(n.today)h+=`<div class="nowb">${swatch({cat:'free'})}<div><div class="nt">Nothing scheduled now</div></div></div>`;
+  if(nx)h+=`<div class="nowb nxt">${swatch(nx)}<div><div class="muted">${n.today?'Next':'First up'} at ${hm(nx.s)}</div><div class="nt2">${esc(blockTitle(nx))}${blockWhere(nx)&&nx.cat!=='roam'&&nx.cat!=='brk'?' · '+esc(blockWhere(nx)):''}</div></div></div>`;
+  h+=`<div class="acts" style="margin-top:8px"><button class="btn pri" data-act="mine">${IC.history}My day</button>${b?`<button class="btn" data-act="go">${IC.dir}Take me there</button>`:''}<button class="btn" data-act="team">Team now</button></div></div>`;
+  return h;
+}
+function bindNowCard(){
+  body.querySelectorAll('[data-act]').forEach(el=>el.onclick=e=>{e.stopPropagation();const a=el.dataset.act;
+    if(a==='pick')openPeople();else if(a==='team')openTeam();else if(a==='mine')openSchedule(me);
+    else if(a==='go'){const n=nowFor(me);if(n.cur)openBlock(me,n.day,n.cur)}});
+}
+/* people picker */
+function openPeople(){
+  const names=roster?roster.names:[];
+  openSearch('place');$('sCtx').style.display='block';$('sCtx').textContent='Who are you?';
+  const R=$('results');
+  R.innerHTML=(names.length?names.map(n=>`<div class="res" data-n="${esc(n)}"><div class="ric"><span class="ini">${esc(initials(n))}</span></div><div class="rt"><div class="rn">${esc(n)}</div><div class="rs">${me&&norm(me)===norm(n)?'Selected':''}</div></div></div>`).join(''):`<div class="hdr" style="text-transform:none">${rosterErr?'Could not load the roster.':'Loading roster…'}</div>`)
+   +(me?`<div class="res" data-n=""><div class="ric">${IC.start}</div><div class="rt"><div class="rn">Clear selection</div></div></div>`:'');
+  R.querySelectorAll('.res').forEach(el=>el.onclick=()=>{me=el.dataset.n||null;store.set('stex-me',me);closeSearch();rosterChanged();if(me)openSchedule(me)});
+}
+/* my day */
+function openSchedule(who,di,keep){
+  if(!who){openPeople();return}
+  if(!roster){toast(rosterErr?'Roster unavailable':'Roster still loading');return}
+  state.mode='sched';state.schedWho=who;state.schedDay=di==null?defaultDay():di;
+  if(!keep)overlay={sel:null,route:null,from:home};
+  $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
+  $('sbarTxt').textContent=who+"'s day";$('sbarTxt').classList.add('val');
+  const d=state.schedDay,bl=blocksFor(who,d),t=todayIdx(),n=berlinNow();
+  const tabs=roster.days.map((x,i)=>`<button class="dtab${i===d?' on':''}" data-d="${i}">${esc(x.label)} ${x.dd}/${x.mm}${i===t?' ·&nbsp;today':''}</button>`).join('');
+  const rows=bl.length?bl.map((b,i)=>{const isNow=d===t&&b.s<=n.min&&n.min<b.e;const w=blockWhere(b);
+    return`<div class="blk${isNow?' now':''}" data-i="${i}"><div class="bt">${hm(b.s)}<small>${hm(b.e)}</small></div>${swatch(b)}<div class="bx"><div class="nt">${esc(blockTitle(b))}${isNow?' <span class="nowtag">NOW</span>':''}</div>${w?`<div class="muted">${esc(w)}</div>`:''}</div></div>`}).join(''):`<div class="muted" style="padding:16px 0">Nothing on the roster for ${esc(who)} this day.</div>`;
+  setSheet(`<div class="schedh"><div><div class="pt" style="margin:0">${esc(who)}</div><div class="muted">${rosterStatusLine()}</div></div><button class="ib" id="rRefresh" aria-label="Refresh">${IC.refresh}</button></div>
+    <div class="dtabs">${tabs}</div>
+    <div class="legend">${['booth','roam','brk','meet','prep'].map(k=>`<span>${swatch({cat:k})}${CAT[k].l.split(':')[0]}</span>`).join('')}</div>
+    <div>${rows}</div>
+    <div class="acts" style="margin-top:12px"><button class="btn" id="rWho">${IC.start}Switch person</button><button class="btn" id="rTeam">Team now</button><a class="btn" href="${SHEET_URL}" target="_blank" rel="noopener">${IC.web}Open roster</a></div>`,{expand:keep?sheetExpanded:true});
+  body.querySelectorAll('.dtab').forEach(el=>el.onclick=()=>openSchedule(who,+el.dataset.d,true));
+  body.querySelectorAll('.blk').forEach(el=>el.onclick=()=>openBlock(who,d,bl[+el.dataset.i]));
+  $('rRefresh').onclick=()=>{toast('Refreshing roster…');loadRoster(true)};
+  $('rWho').onclick=openPeople;$('rTeam').onclick=()=>openTeam();
+  const cur=body.querySelector('.blk.now');if(cur&&!keep)setTimeout(()=>cur.scrollIntoView({block:'center'}),60);
+  render();
+}
+function openBlock(who,di,b){
+  state.mode='block';
+  const pl=placeFor(b);const day=roster.days[di];
+  const c=CAT[b.cat]||CAT.other;
+  let mapHtml='';
+  overlay={sel:null,route:null,from:home};
+  if(pl&&pl.places.length===1){overlay.sel=pl.places[0];const bb=bbox(pl.places[0].booths.flatMap(x=>x.img));fitBox(bb[0]-320,bb[1]-320,bb[2]+320,bb[3]+320)}
+  else if(pl&&pl.places.length>1){overlay.sel={booths:pl.places.map(p=>p.booth),booth:null};const bb=bbox(pl.places.flatMap(p=>p.booth.img));fitBox(bb[0]-200,bb[1]-200,bb[2]+200,bb[3]+200)}
+  else if(pl&&pl.hall){const bs=booths.filter(x=>x.hall===pl.hall);const bb=bbox(bs.flatMap(x=>x.img));fitBox(bb[0]-40,bb[1]-40,bb[2]+40,bb[3]+40)}
+  else render();
+  const list=pl&&pl.places.length?pl.places.map(p=>{field(home.booth.k);const m=p===home?0:metres(p.booth.k);
+    return`<div class="mini" data-id="${p.id}"><div class="logo">${esc(initials(p.name))}</div><div style="flex:1;min-width:0"><div style="font-size:15px">${esc(p.name)}</div><div class="muted">${p.booth.code?'Booth '+esc(p.booth.code)+' · ':''}${hallName(p.booth.hall)}${p!==home&&isFinite(m)?' · '+fmtMin(m)+' from '+esc(home.name):''}</div></div><button class="btn pri sm" data-go="${p.id}">${IC.dir}Go</button></div>`}).join(''):'';
+  let note='';
+  if(b.cat==='roam')note='You can be anywhere at the expo, talking to other booths.'+(pl&&pl.places.length?' Suggested booths from the roster:':'');
+  else if(b.cat==='brk')note='On break. Cafés are listed under the Cafés chip on the map.';
+  else if(!pl&&b.text)note="Couldn't pin this one to a booth on the map. Check the roster note.";
+  else if(pl&&!pl.places.length&&pl.hall)note='Somewhere in '+hallName(pl.hall)+'. The roster does not give an exact booth.';
+  setSheet(`<button class="btn" id="bBack" style="margin-bottom:8px">← ${esc(who)}'s day</button>
+    <div style="display:flex;gap:10px;align-items:center">${swatch(b)}<div class="pt" style="margin:0">${esc(blockTitle(b))}</div></div>
+    <div class="ps">${esc(day.name)} · ${hm(b.s)}–${hm(b.e)} · ${esc(c.l.split(':')[0])}</div>
+    ${b.text&&blockTitle(b)!==b.text?`<div class="ps" style="margin-top:6px">Roster note: <b>${esc(b.text)}</b></div>`:''}
+    ${note?`<div class="ps" style="margin-top:8px">${esc(note)}</div>`:''}
+    ${list?`<div class="sect" style="padding-top:4px">${list}</div>`:''}`);
+  $('bBack').onclick=()=>openSchedule(who,di,true);
+  body.querySelectorAll('[data-go]').forEach(el=>el.onclick=e=>{e.stopPropagation();const p=places.find(x=>x.id===el.dataset.go);if(p===home){openPlace(home);return}setDir(home,p)});
+  body.querySelectorAll('.mini').forEach(el=>el.onclick=()=>openPlace(places.find(x=>x.id===el.dataset.id)));
+}
+/* team now */
+function openTeam(keep){
+  if(!roster){toast(rosterErr?'Roster unavailable':'Roster still loading');return}
+  state.mode='team';if(!keep)overlay={sel:null,route:null,from:home};
+  $('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
+  $('sbarTxt').textContent='Team now';$('sbarTxt').classList.add('val');
+  const t=todayIdx();
+  const rows=roster.names.map(nm=>{const n=nowFor(nm);const b=n.cur;
+    const line=b&&b.cat!=='free'?`${swatch(b)}<div class="bx"><div class="nt">${esc(blockTitle(b))}</div><div class="muted">until ${hm(b.e)}${blockWhere(b)?' · '+esc(blockWhere(b)):''}</div></div>`:`${swatch({cat:'free'})}<div class="bx"><div class="nt">${n.today?'Nothing scheduled now':'Not started yet'}</div>${n.next?`<div class="muted">${n.today?'Next':'First up'} ${hm(n.next.s)}: ${esc(blockTitle(n.next))}</div>`:''}</div>`;
+    return`<div class="blk" data-n="${esc(nm)}"><div class="avs">${esc(initials(nm))}</div><div class="bx" style="flex:1"><div style="font-weight:500">${esc(nm)}</div><div style="display:flex;gap:10px;align-items:flex-start;margin-top:4px">${line}</div></div></div>`}).join('');
+  setSheet(`<div class="schedh"><div><div class="pt" style="margin:0">Team now</div><div class="muted">${t>=0?esc(roster.days[t].name)+' · '+hm(berlinNow().min)+' Bremen time':'The expo roster has not started today'} · ${rosterStatusLine()}</div></div><button class="ib" id="rRefresh" aria-label="Refresh">${IC.refresh}</button></div>${rows}`,{expand:true});
+  body.querySelectorAll('.blk').forEach(el=>el.onclick=()=>openSchedule(el.dataset.n));
+  $('rRefresh').onclick=()=>{toast('Refreshing roster…');loadRoster(true)};
+  render();
+}
+$('me').onclick=e=>{e.stopPropagation();openPeople()};
+setInterval(()=>{if(document.visibilityState==='visible')loadRoster()},60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-rosterAt>30000)loadRoster()});
+setInterval(()=>{if(state.mode==='explore'||state.mode==='team')rosterChanged()},30000);
+(()=>{const c=store.get('stex-roster',null);if(c){roster=c;rosterAt=c.at||0}})();
+
 /* ---------------- boot ---------------- */
 function boot(){
   minS=Math.min(vw()/IMW,vh()/IMH)*0.9;
   explore();fitAll(false);
+  loadRoster();
   setTimeout(()=>{field(home.booth.k);$('loading').remove();
     const h=location.hash.slice(1);if(h){const b=byCode[h.toUpperCase()];if(b&&b.places[0])openPlace(b.places[0])}
   },30);
