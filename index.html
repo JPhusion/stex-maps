@@ -182,6 +182,13 @@ mark{background:none;color:var(--txt);font-weight:700}
 .meetl{display:flex;align-items:flex-start;gap:5px;font-size:13px;color:#1967d2;margin-top:2px;line-height:17px}.meetl svg{width:15px;height:15px;fill:currentColor;flex:none;margin-top:1px}
 .meetl .mt{color:var(--sub)}.meetl i{color:var(--sub);font-style:normal}
 .meetbox{background:#e8f0fe;border-radius:10px;padding:8px 10px;margin-top:8px}.meetbox .meetl{font-size:14px;line-height:20px}
+
+.rp{display:flex;align-items:center;gap:4px;font-size:12px;color:#188038;font-weight:500;margin-top:2px;white-space:nowrap;overflow:hidden}.rp span{overflow:hidden;text-overflow:ellipsis}.rp svg{width:14px;height:14px;fill:currentColor;flex:none}.rp.past{color:var(--sub);font-weight:400}
+.plan{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f1f3f4}.plan.past{opacity:.55}
+.plan .pw{width:46px;flex:none;font-size:12px;color:var(--sub);line-height:16px}.plan .pw b{display:block;color:var(--txt);font-size:14px}
+
+a.li{color:inherit;text-decoration:underline;text-decoration-color:rgba(25,103,210,.35);text-underline-offset:2px}
+.muted a.li{color:#1967d2}
 </style>
 </head>
 <body>
@@ -565,6 +572,7 @@ $('sbIcon').onclick=e=>{if(state.mode!=='explore'){e.stopPropagation();goBack()}
 function initials(n){const w=String(n).replace(/[^\p{L}\p{N} ]/gu,' ').split(/\s+/).filter(Boolean);return((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase()}
 function placeIcon(p){return p.kind==='cafe'?IC.cafe:p.kind==='lounge'?IC.sofa:p.kind==='talk'?IC.mic:p.kind==='service'?IC.flag:IC.store}
 function subLine(p){
+  if(!p.booth&&p.kind==='meetco'){const pl=plansFor(p).find(e=>e.m&&e.m.place&&!/confirm location/i.test(e.m.place));return 'Not an exhibitor'+(pl?' · meeting at '+esc(pl.m.place):'')}
   if(!p.booth)return 'Not on this floor plan'+(p.codes.length?' · Stand '+p.codes.join(', '):'');
   const b=p.booth;return (b.code?'Booth '+esc(b.code)+' · ':'')+hallName(b.hall);
 }
@@ -608,8 +616,7 @@ function openPlace(p,fly=true){
      ${p.booth?`<button class="btn" id="aShare">${IC.share}Share</button>`:''}
    </div>
    ${p.desc||cats?`<div class="sect"><div class="hdr" style="padding:0 0 8px">About</div>${p.desc?'<div class="about">'+esc(p.desc)+'</div>':''}${cats}</div>`:''}
-   ${(()=>{const ms=meetingsAtPlace(p);if(!ms.length)return'';const dn=m=>{const d=roster.days.find(x=>x.dd===m.dd&&x.mm===m.mm);return d?d.label:m.dd+'/'+m.mm};
-      return`<div class="sect"><div class="hdr" style="padding:0 0 4px">Team meetings with ${esc(ms[0].company)}</div>${ms.map(m=>`<div class="row" style="padding:6px 0">${IC.person}<div><b style="font-weight:500">${esc(dn(m))} ${hm(m.s)}</b>${m.status&&!/confirm/i.test(m.status)?' <span class="muted">('+esc(m.status)+')</span>':''}<br>${m.people.map(x=>esc(x.n)+(x.t?' <span class="muted">· '+esc(x.t)+'</span>':'')).join('<br>')}${m.place&&!/confirm location/i.test(m.place)?`<br><span class="muted">${esc(m.place)}</span>`:''}</div></div>`).join('')}</div>`})()}
+   ${planSection(p)}
    <div class="sect">
      ${p.booth?`<div class="row">${IC.pin}<div>${p.booth.code?'Booth '+esc(p.booth.code)+', ':''}${hallName(p.booth.hall)}<br><span class="muted">Messe Bremen</span></div></div>`:''}
      ${p.url?`<div class="row">${IC.globe}<a href="${esc(fixUrl(p.url))}" target="_blank" rel="noopener">${esc(p.url.replace(/^https?:\/\//,'').replace(/\/$/,''))}</a></div>`:''}
@@ -751,7 +758,7 @@ function resRow(p,q){
   const sub=[p.booth&&p.booth.code?'Booth '+p.booth.code:'',p.booth?hallName(p.booth.hall):'Not on plan',p.cats[0]||''].filter(Boolean).map(esc).join(' · ');
   const why=p._why?`<div class="rw">${esc(p._why)}</div>`:'';
   const st=isStar(p)?'<span class="rstar">★</span>':'';
-  return `<div class="res" data-id="${p.id}"><div class="ric">${p.logo?`<span class="ini">${esc(initials(p.name))}</span><img src="${esc(p.logo)}" alt="" loading="lazy" onerror="this.remove()">`:placeIcon(p)}</div><div class="rt"><div class="rn">${st}${hl(p.name,q)}</div><div class="rs">${sub}</div>${why}</div><div class="rm">${m}</div></div>`;
+  return `<div class="res" data-id="${p.id}"><div class="ric">${p.logo?`<span class="ini">${esc(initials(p.name))}</span><img src="${esc(p.logo)}" alt="" loading="lazy" onerror="this.remove()">`:placeIcon(p)}</div><div class="rt"><div class="rn">${st}${hl(p.name,q)}</div><div class="rs">${sub}</div>${why}${planBadge(p)}</div><div class="rm">${m}</div></div>`;
 }
 function renderResults(raw){
   const q=norm(raw).trim(),words=q.split(/\s+/).filter(Boolean);const R=$('results');
@@ -920,7 +927,21 @@ async function loadRoster(force){
   }finally{rosterBusy=false}
   rosterChanged();
 }
+/* companies we're meeting that aren't exhibitors (e.g. Metrea at a B2B table) still get a searchable page */
+function syncMeetingPlaces(){
+  if(!roster)return;
+  places=places.filter(p=>p.kind!=='meetco');
+  const seen=new Set();
+  for(const m of (roster.meetings||[])){
+    const k=key(m.company);if(!k||seen.has(k))continue;seen.add(k);
+    if(findCompany(m.company))continue;
+    const nm=m.company.replace(/\s+/g,' ').trim();
+    places.push({id:'mc'+k,name:nm,booth:null,booths:[],codes:[],url:'',logo:'',desc:'',prods:[],cats:['Meeting contact · not an exhibitor'],country:'',kind:'meetco',n:norm(nm),k:key(nm),dom:'',cn:'',hp:'',hd:''});
+  }
+  _tpAt=-1;
+}
 function rosterChanged(){
+  syncMeetingPlaces();
   $('me').textContent=me?initials(me):'?';$('me').style.background=me?'#7b1fa2':'#9aa0a6';
   if(state.mode==='explore')explore();
   else if(state.mode==='sched')openSchedule(state.schedWho,state.schedDay,true);
@@ -943,9 +964,9 @@ function nowFor(who){
 function findCompany(s){
   const k=key(s);if(k.length<3)return null;
   let best=null,bs=0;
-  for(const p of places){if(!p.booth)continue;const pk=key(p.name);let sc=0;
+  for(const p of places){if(!p.booth&&p.kind!=='meetco')continue;const pk=p.k||key(p.name);let sc=0;
     if(pk===k)sc=100;else if(pk.startsWith(k)&&k.length>=4)sc=80;else if(k.startsWith(pk)&&pk.length>=4)sc=70;else if(k.length>=5&&pk.includes(k))sc=50;
-    if(p.kind==='ex')sc+=1;if(sc>bs){bs=sc;best=p}}
+    if(p.kind==='ex')sc+=1;if(p.kind==='meetco')sc-=2;if(sc>bs){bs=sc;best=p}}
   return bs>=50?best:null;
 }
 function hallIn(t){const m=/\b(?:hall|h)\s*(4\.1|[1-7])\b/i.exec(t)||/\b(4\.1)\b/.exec(t);return m?m[1]:(/upper deck/i.test(t)?'4.1':null)}
@@ -987,7 +1008,7 @@ function parseMeetings(G,days,out){
     const low=t.map(x=>norm(x).trim());
     const ci=low.indexOf('company_name')>=0?low.indexOf('company_name'):low.indexOf('company name');
     if(ci>=0){cols={date:low.indexOf('date'),time:low.indexOf('time'),place:low.findIndex(x=>x==='place'||x==='location'),company:ci,
-      name:low.findIndex(x=>x==='person_full_name'||x==='full name'),title:low.indexOf('person_title'),status:low.indexOf('status')};continue}
+      name:low.findIndex(x=>x==='person_full_name'||x==='full name'),title:low.indexOf('person_title'),status:low.indexOf('status'),acct:low.indexOf('b2b_account_name')};continue}
     const dm=/^(\d{1,2})(st|nd|rd|th)$/i.exec((t[0]||'').trim());
     if(dm){dd=+dm[1];const d=days.find(x=>x.dd===dd);mm=d?d.mm:(days[0]?days[0].mm:11);continue}
     if(!cols)continue;
@@ -995,7 +1016,7 @@ function parseMeetings(G,days,out){
     let edd=dd,emm=mm;if(cols.date>=0){const m=/(\d{4})-(\d{2})-(\d{2})/.exec(t[cols.date]||'');if(!m)continue;emm=+m[2];edd=+m[3]}
     if(!edd)continue;
     const names=(t[cols.name]||'').split(';').map(x=>x.trim()).filter(Boolean),titles=(cols.title>=0?t[cols.title]:'').split(';').map(x=>x.trim());
-    out.push({dd:edd,mm:emm,s:tm.s,e:tm.e,company,place:cols.place>=0?(t[cols.place]||''):'',people:names.map((n,i)=>({n,t:titles[i]||''})),status:cols.status>=0?(t[cols.status]||''):''});
+    out.push({acct:cols.acct>=0?(t[cols.acct]||''):'',dd:edd,mm:emm,s:tm.s,e:tm.e,company,place:cols.place>=0?(t[cols.place]||''):'',people:names.map((n,i)=>({n,t:titles[i]||''})),status:cols.status>=0?(t[cols.status]||''):''});
   }
 }
 const MEETSTOP=/^(hall|table|booth|our|out|their|near|middle|next|the|pavilion|pavillion|exhibitions?|entrance|upper|deck|back|wall|front|side|room|congress|centrum|bremen|gmbh|ltd|inc|sas|spa|srl|corporation|corp|technologies|technology|tech|space|systems?|aerospace|group|labs?|company)$/;
@@ -1018,10 +1039,51 @@ function meetingFor(di,b){
   const bk=key(b.text.split('(')[0]);   // short names like "R-Space" / "U-Space" have no distinctive word, so compare the squashed name too
   return roster.meetings.find(m=>m.dd===d.dd&&m.mm===d.mm&&m.s<b.e&&b.s<m.e&&(meetToks(m.company).some(w=>bt.has(w))||(bk.length>=4&&(key(m.company).startsWith(bk)||bk.startsWith(key(m.company))))))||null;
 }
+/* tap a contact's name: LinkedIn people search for "name company" (opens the LinkedIn app if installed) */
+function liUrl(name,company){const c=String(company||'').replace(/\b(gmbh|s\.?l\.?|s\.?a\.?|ltd\.?|inc\.?|corporation|as|ag|se|b\.?v\.?|llc|plc)\b\.?/gi,'').replace(/\(.*?\)/g,'').replace(/\s+/g,' ').trim();
+  return'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent(String(name).replace(/[()]/g,'').trim()+' '+c)}
+const liA=(name,company)=>`<a class="li" href="${esc(liUrl(name,company))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(name)}</a>`;
 function contactLine(m,{full=false}={}){
   if(!m||!m.people.length)return'';
-  const ppl=m.people.map(p=>esc(p.n)+(p.t&&full?'<span class="mt">, '+esc(p.t)+'</span>':'')).join(full?'<br>':', ');
+  const ppl=m.people.map(p=>liA(p.n,m.company)+(p.t&&full?'<span class="mt">, '+esc(p.t)+'</span>':'')).join(full?'<br>':', ');
   return`<div class="meetl">${IC.person}<span>${full?'':'Meeting '}${ppl}${!full&&m.status&&!/confirm/i.test(m.status)?' <i>('+esc(m.status)+')</i>':''}</span></div>`;
+}
+/* every meeting / rounds visit the team has with a company: from roster cells, plus B2B bookings not on the roster */
+let _tp=null,_tpAt=-1;
+function teamPlans(){
+  if(!roster)return new Map();if(_tpAt===roster.at&&_tp)return _tp;
+  const map=new Map();
+  const put=(p,di,b,nm,m)=>{if(!p)return;const arr=map.get(p.id)||[];let e=arr.find(x=>x.di===di&&x.s===b.s&&x.cat===b.cat);
+    if(!e){e={di,s:b.s,e:b.e,cat:b.cat,text:b.text||'',team:[],m:m||null};arr.push(e)}if(nm&&!e.team.includes(nm))e.team.push(nm);if(!e.m&&m)e.m=m;map.set(p.id,arr)};
+  roster.days.forEach((d,di)=>{
+    for(const nm of roster.names)for(const b of blocksFor(nm,di)){
+      if(!['meet','event','roam'].includes(b.cat)||!b.text)continue;
+      const raw=b.text.replace(/\([^)]*\)/g,' ').replace(/\bH\s*(4\.1|[1-7])\b/gi,' ').replace(/\b\d{1,2}[:.]\d{2}\b/g,' ');
+      const ps=new Set();for(const part of raw.split(/,|\/|&|\band\b/i)){const p=findCompany(part.trim());if(p)ps.add(p)}
+      const m=b.cat==='roam'?null:meetingFor(di,b);if(m){const p=findCompany(m.company);if(p)ps.add(p)}
+      for(const p of ps)put(p,di,b,nm,m);
+    }
+    // B2B bookings the roster doesn't show (e.g. booked by someone not on the roster)
+    for(const m of (roster.meetings||[])){if(m.dd!==d.dd||m.mm!==d.mm)continue;const p=findCompany(m.company);if(!p)continue;
+      const arr=map.get(p.id)||[];if(arr.some(x=>x.di===di&&x.s<m.e&&m.s<x.e&&x.cat!=='roam'))continue;
+      put(p,di,{s:m.s,e:m.e,cat:'meet',text:m.company},m.acct?m.acct.split(' ')[0]+' (B2B app)':'',m)}
+  });
+  for(const arr of map.values())arr.sort((a,b)=>a.di-b.di||a.s-b.s);
+  _tp=map;_tpAt=roster.at;return map;
+}
+function plansFor(p){return roster?(teamPlans().get(p.id)||[]):[]}
+const planDay=e=>{const d=roster.days[e.di];return d?d.label:''};
+function planIsPast(e){const t=todayIdx();if(t<0){const n=berlinNow();const d=roster.days[e.di];return d&&(d.mm<n.mm||(d.mm===n.mm&&d.dd<n.dd))}return e.di<t||(e.di===t&&e.e<=berlinNow().min)}
+function planBadge(p){
+  const ps=plansFor(p);if(!ps.length)return'';
+  const nx=ps.find(e=>!planIsPast(e))||ps[ps.length-1];
+  const kind=nx.cat==='roam'?'Rounds':nx.cat==='event'?'Event':'Meeting';
+  return`<div class="rp${planIsPast(nx)?' past':''}">${nx.cat==='roam'?IC.walk:IC.person}<span>${kind} ${esc(planDay(nx))} ${hm(nx.s)} · ${esc(nx.team.join(', ')||'team')}${ps.length>1?' · +'+(ps.length-1)+' more':''}</span></div>`;
+}
+function planSection(p){
+  const ps=plansFor(p);if(!ps.length)return'';
+  return`<div class="sect"><div class="hdr" style="padding:0 0 4px">Team plans with ${esc(p.name)}</div>${ps.map(e=>{const kind=e.cat==='roam'?'Rounds visit':e.cat==='event'?'Event':'Meeting';
+    return`<div class="plan${planIsPast(e)?' past':''}"><div class="pw">${esc(planDay(e))}<b>${hm(e.s)}</b></div><div style="min-width:0"><div class="nt2"><b style="font-weight:500">${kind}</b> · ${esc(e.team.join(', ')||'team')}</div>${e.m&&e.m.people.length?`<div class="muted">With ${e.m.people.map(x=>liA(x.n,e.m.company)+(x.t?' ('+esc(x.t)+')':'')).join(', ')}${e.m.status&&!/confirm/i.test(e.m.status)?' · '+esc(e.m.status):''}</div>`:''}${e.m&&e.m.place&&!/confirm location/i.test(e.m.place)?`<div class="muted">${esc(e.m.place)}</div>`:(e.cat!=='roam'&&/\(/.test(e.text)?`<div class="muted">${esc((e.text.match(/\(([^)]*)\)/)||[])[1]||'')}</div>`:'')}</div></div>`}).join('')}</div>`;
 }
 function meetingsAtPlace(p){
   if(!roster||!roster.meetings)return[];
