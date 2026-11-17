@@ -178,6 +178,10 @@ mark{background:none;color:var(--txt);font-weight:700}
 .scanbox img{width:72px;border-radius:6px;flex:none}
 .scantxt{margin-top:12px;font-size:13px;color:var(--sub)}
 .scantxt pre{white-space:pre-wrap;font-family:inherit;background:#f8f9fa;border-radius:8px;padding:8px;color:#3c4043;max-height:160px;overflow:auto}
+
+.meetl{display:flex;align-items:flex-start;gap:5px;font-size:13px;color:#1967d2;margin-top:2px;line-height:17px}.meetl svg{width:15px;height:15px;fill:currentColor;flex:none;margin-top:1px}
+.meetl .mt{color:var(--sub)}.meetl i{color:var(--sub);font-style:normal}
+.meetbox{background:#e8f0fe;border-radius:10px;padding:8px 10px;margin-top:8px}.meetbox .meetl{font-size:14px;line-height:20px}
 </style>
 </head>
 <body>
@@ -260,6 +264,7 @@ const IC={
  starOn:'<svg viewBox="0 0 24 24" style="color:#f9ab00"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>',
  share:'<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>',
  camera:'<svg viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>',
+ person:'<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
  history:'<svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>',
 };
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -511,7 +516,7 @@ const home=places.find(p=>p.codes.includes(HOME_CODE))||places[0];
 const state={mode:'explore',place:null,_from:null,to:null,filter:null};
 // start point: a manually picked place, otherwise wherever the roster says I should be right now
 function autoFrom(){
-  try{if(typeof me!=='undefined'&&me&&roster){const n=nowFor(me);if(n.today&&n.cur){const pl=placeFor(n.cur);if(pl&&pl.places.length===1&&pl.places[0].booth)return pl.places[0]}}}catch(e){}
+  try{if(typeof me!=='undefined'&&me&&roster){const n=nowFor(me);if(n.today&&n.cur){const pl=placeForMeet(n.day,n.cur);if(pl&&pl.places.length===1&&pl.places[0].booth)return pl.places[0]}}}catch(e){}
   return home;
 }
 function fromIsAuto(){return !state._from}
@@ -603,6 +608,8 @@ function openPlace(p,fly=true){
      ${p.booth?`<button class="btn" id="aShare">${IC.share}Share</button>`:''}
    </div>
    ${p.desc||cats?`<div class="sect"><div class="hdr" style="padding:0 0 8px">About</div>${p.desc?'<div class="about">'+esc(p.desc)+'</div>':''}${cats}</div>`:''}
+   ${(()=>{const ms=meetingsAtPlace(p);if(!ms.length)return'';const dn=m=>{const d=roster.days.find(x=>x.dd===m.dd&&x.mm===m.mm);return d?d.label:m.dd+'/'+m.mm};
+      return`<div class="sect"><div class="hdr" style="padding:0 0 4px">Team meetings with ${esc(ms[0].company)}</div>${ms.map(m=>`<div class="row" style="padding:6px 0">${IC.person}<div><b style="font-weight:500">${esc(dn(m))} ${hm(m.s)}</b>${m.status&&!/confirm/i.test(m.status)?' <span class="muted">('+esc(m.status)+')</span>':''}<br>${m.people.map(x=>esc(x.n)+(x.t?' <span class="muted">· '+esc(x.t)+'</span>':'')).join('<br>')}${m.place&&!/confirm location/i.test(m.place)?`<br><span class="muted">${esc(m.place)}</span>`:''}</div></div>`).join('')}</div>`})()}
    <div class="sect">
      ${p.booth?`<div class="row">${IC.pin}<div>${p.booth.code?'Booth '+esc(p.booth.code)+', ':''}${hallName(p.booth.hall)}<br><span class="muted">Messe Bremen</span></div></div>`:''}
      ${p.url?`<div class="row">${IC.globe}<a href="${esc(fixUrl(p.url))}" target="_blank" rel="noopener">${esc(p.url.replace(/^https?:\/\//,'').replace(/\/$/,''))}</a></div>`:''}
@@ -900,6 +907,12 @@ async function loadRoster(force){
     const legend={};days.forEach(d=>Object.assign(legend,d.legend));
     const names=[];days.forEach(d=>d.people.forEach(p=>{if(!names.some(n=>norm(n)===norm(p.name)))names.push(p.name)}));
     const out={names,legend,at:Date.now(),days:days.map(d=>({name:d.name,label:d.label,dd:d.dd,mm:d.mm,blocks:buildBlocks(d,legend)}))};
+    // who we're meeting: the B2B app extract tab, plus any "Time / Location / Full name / Company name" tab (e.g. Sheet23)
+    const meetings=[];
+    for(const it of items.filter(i=>!dayItems.includes(i))){
+      try{const G=parseGrid(await fetchText('https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/htmlview/sheet?headers=false&gid='+it.gid));parseMeetings(G,days,meetings)}catch(e){}
+    }
+    out.meetings=mergeMeetings(meetings);
     out.days.sort((a,b)=>a.mm-b.mm||a.dd-b.dd);
     roster=out;rosterErr='';rosterAt=Date.now();store.set('stex-roster',out);
   }catch(e){
@@ -966,7 +979,58 @@ function companions(who,di,b){
   return out;
 }
 function withLine(who,di,b){const c=companions(who,di,b);if(!c.length)return'';const lead=b.cat==='roam'?'Also on rounds: ':b.cat==='brk'?'Also on break: ':(b.cat==='booth'||b.cat==='setup')?'At the booth with ':'With ';return'<div class="withl">'+IC.people+'<span>'+lead+c.map(esc).join(', ')+'</span></div>'}
+/* ---- meetings: who we're meeting (from the B2B app extract / meeting list tabs) ---- */
+function parseTime(t){const m=/(\d{1,2})[:.](\d{2})\s*[-–]\s*(\d{1,2})[:.](\d{2})/.exec(t||'');if(!m)return null;let a=+m[1],b=+m[3];if(a<7)a+=12;if(b<7||b<a)b+=12;return{s:a*60+(+m[2]),e:b*60+(+m[4])}}
+function parseMeetings(G,days,out){
+  let cols=null,dd=0,mm=0;
+  for(const row of G){if(!row)continue;const t=row.map(c=>c?c.t:'');
+    const low=t.map(x=>norm(x).trim());
+    const ci=low.indexOf('company_name')>=0?low.indexOf('company_name'):low.indexOf('company name');
+    if(ci>=0){cols={date:low.indexOf('date'),time:low.indexOf('time'),place:low.findIndex(x=>x==='place'||x==='location'),company:ci,
+      name:low.findIndex(x=>x==='person_full_name'||x==='full name'),title:low.indexOf('person_title'),status:low.indexOf('status')};continue}
+    const dm=/^(\d{1,2})(st|nd|rd|th)$/i.exec((t[0]||'').trim());
+    if(dm){dd=+dm[1];const d=days.find(x=>x.dd===dd);mm=d?d.mm:(days[0]?days[0].mm:11);continue}
+    if(!cols)continue;
+    const company=t[cols.company]||'';const tm=parseTime(t[cols.time]);if(!company||!tm)continue;
+    let edd=dd,emm=mm;if(cols.date>=0){const m=/(\d{4})-(\d{2})-(\d{2})/.exec(t[cols.date]||'');if(!m)continue;emm=+m[2];edd=+m[3]}
+    if(!edd)continue;
+    const names=(t[cols.name]||'').split(';').map(x=>x.trim()).filter(Boolean),titles=(cols.title>=0?t[cols.title]:'').split(';').map(x=>x.trim());
+    out.push({dd:edd,mm:emm,s:tm.s,e:tm.e,company,place:cols.place>=0?(t[cols.place]||''):'',people:names.map((n,i)=>({n,t:titles[i]||''})),status:cols.status>=0?(t[cols.status]||''):''});
+  }
+}
+const MEETSTOP=/^(hall|table|booth|our|out|their|near|middle|next|the|pavilion|pavillion|exhibitions?|entrance|upper|deck|back|wall|front|side|room|congress|centrum|bremen|gmbh|ltd|inc|sas|spa|srl|corporation|corp|technologies|technology|tech|space|systems?|aerospace|group|labs?|company)$/;
+const meetToks=x=>norm(x).split(/[^a-z0-9]+/).filter(w=>w.length>=3&&!MEETSTOP.test(w));
+function mergeMeetings(list){
+  const out=[];
+  for(const m of list){
+    const k=meetToks(m.company)[0]||key(m.company);
+    const o=out.find(x=>x.dd===m.dd&&x.mm===m.mm&&x.s===m.s&&(meetToks(x.company)[0]||key(x.company))===k);
+    if(!o){out.push({...m,people:[...m.people]});continue}
+    for(const p of m.people)if(!o.people.some(q=>norm(q.n)===norm(p.n)))o.people.push(p);else{const q=o.people.find(q=>norm(q.n)===norm(p.n));if(!q.t&&p.t)q.t=p.t}
+    if(!o.status&&m.status)o.status=m.status;if((!o.place||/confirm location/i.test(o.place))&&m.place)o.place=m.place;
+    if(m.company.length>o.company.length&&/[a-z]/.test(m.company))o.company=m.company;
+  }
+  return out;
+}
+function meetingFor(di,b){
+  if(!roster||!roster.meetings||!b||!(b.cat==='meet'||b.cat==='event')||!b.text)return null;
+  const d=roster.days[di];if(!d)return null;const bt=new Set(meetToks(b.text.replace(/\([^)]*\)/g,' ')));
+  const bk=key(b.text.split('(')[0]);   // short names like "R-Space" / "U-Space" have no distinctive word, so compare the squashed name too
+  return roster.meetings.find(m=>m.dd===d.dd&&m.mm===d.mm&&m.s<b.e&&b.s<m.e&&(meetToks(m.company).some(w=>bt.has(w))||(bk.length>=4&&(key(m.company).startsWith(bk)||bk.startsWith(key(m.company))))))||null;
+}
+function contactLine(m,{full=false}={}){
+  if(!m||!m.people.length)return'';
+  const ppl=m.people.map(p=>esc(p.n)+(p.t&&full?'<span class="mt">, '+esc(p.t)+'</span>':'')).join(full?'<br>':', ');
+  return`<div class="meetl">${IC.person}<span>${full?'':'Meeting '}${ppl}${!full&&m.status&&!/confirm/i.test(m.status)?' <i>('+esc(m.status)+')</i>':''}</span></div>`;
+}
+function meetingsAtPlace(p){
+  if(!roster||!roster.meetings)return[];
+  const pt=new Set(meetToks(p.name));if(!pt.size)return[];
+  return roster.meetings.filter(m=>meetToks(m.company).some(w=>pt.has(w)));
+}
 function blockTitle(b){const c=CAT[b.cat]||CAT.other;if(b.cat==='meet'||b.cat==='event')return b.text||c.l;if(b.cat==='na')return'Not available';if((b.cat==='roam'||b.cat==='other'||b.cat==='free')&&b.text)return(b.cat==='roam'?'Rounds: ':'')+b.text;return c.l}
+function placeForMeet(di,b){const pl=placeFor(b);if(pl&&(pl.places.length||pl.hall))return pl;const m=meetingFor(di,b);if(!m)return pl;
+  const alt=placeFor({cat:'meet',text:m.company+(m.place&&!/confirm location/i.test(m.place)?' ('+m.place+')':'')});return alt&&(alt.places.length||alt.hall)?alt:pl}
 function blockWhere(b){
   if(b.cat==='roam')return'Anywhere on the show floor, talking to other booths';
   if(b.cat==='brk')return'Anywhere. Take a break';
@@ -985,9 +1049,9 @@ function nowCardHtml(){
   if(!me)return`<div class="nowc"><div class="ps"><b>Which team member are you?</b></div><div class="acts" style="margin-top:8px"><button class="btn pri" data-act="pick">${IC.start}Choose me</button><button class="btn" data-act="team">Team now</button></div></div>`;
   const n=nowFor(me);const b=n.cur,nx=n.next;
   let h=`<div class="nowc" data-act="mine"><div class="nowh"><span class="avs">${esc(initials(me))}</span><b>${esc(me)}</b><span class="muted">${n.today?'right now':'next: '+esc(roster.days[n.day]?roster.days[n.day].name:'')}</span></div>`;
-  if(b&&b.cat!=='free'){h+=`<div class="nowb">${swatch(b)}<div><div class="nt">${esc(blockTitle(b))}</div><div class="muted">${hm(b.s)}–${hm(b.e)}${blockWhere(b)?' · '+esc(blockWhere(b)):''}</div>${withLine(me,n.day,b)}</div></div>`}
+  if(b&&b.cat!=='free'){h+=`<div class="nowb">${swatch(b)}<div><div class="nt">${esc(blockTitle(b))}</div><div class="muted">${hm(b.s)}–${hm(b.e)}${blockWhere(b)?' · '+esc(blockWhere(b)):''}</div>${contactLine(meetingFor(n.day,b))}${withLine(me,n.day,b)}</div></div>`}
   else if(n.today)h+=`<div class="nowb">${swatch({cat:'free'})}<div><div class="nt">Nothing scheduled now</div></div></div>`;
-  if(nx)h+=`<div class="nowb nxt">${swatch(nx)}<div><div class="muted">${n.today?'Next':'First up'} at ${hm(nx.s)}</div><div class="nt2">${esc(blockTitle(nx))}${blockWhere(nx)&&nx.cat!=='roam'&&nx.cat!=='brk'?' · '+esc(blockWhere(nx)):''}</div>${withLine(me,n.day,nx)}</div></div>`;
+  if(nx)h+=`<div class="nowb nxt">${swatch(nx)}<div><div class="muted">${n.today?'Next':'First up'} at ${hm(nx.s)}</div><div class="nt2">${esc(blockTitle(nx))}${blockWhere(nx)&&nx.cat!=='roam'&&nx.cat!=='brk'?' · '+esc(blockWhere(nx)):''}</div>${contactLine(meetingFor(n.day,nx))}${withLine(me,n.day,nx)}</div></div>`;
   h+=`<div class="acts" style="margin-top:8px"><button class="btn pri" data-act="mine">${IC.history}My day</button>${b?`<button class="btn" data-act="go">${IC.dir}Take me there</button>`:''}<button class="btn" data-act="team">Team now</button></div></div>`;
   return h;
 }
@@ -1020,7 +1084,7 @@ function openSchedule(who,di,keep){
   let gapDone=d!==t;
   const rows=bl.length?bl.map((b,i)=>{const isNow=d===t&&b.s<=n.min&&n.min<b.e;const w=blockWhere(b);
     let pre='';if(!gapDone&&!isNow&&n.min<b.s){pre='<div class="nowgap"><i class="nowline"><b></b></i></div>';gapDone=true}if(isNow)gapDone=true;
-    return pre+`<div class="blk${isNow?' now':''}" data-i="${i}">${isNow?nowLine(Math.round((n.min-b.s)/(b.e-b.s)*100)):''}<div class="bt">${hm(b.s)}<small>${hm(b.e)}</small></div>${swatch(b)}<div class="bx"><div class="nt">${esc(blockTitle(b))}${isNow?' <span class="nowtag">NOW</span>':''}</div>${w?`<div class="muted">${esc(w)}</div>`:''}${withLine(who,d,b)}</div></div>`}).join('')+(gapDone?'':'<div class="nowgap"><i class="nowline"><b></b></i></div>'):`<div class="muted" style="padding:16px 0">Nothing on the roster for ${esc(who)} this day.</div>`;
+    return pre+`<div class="blk${isNow?' now':''}" data-i="${i}">${isNow?nowLine(Math.round((n.min-b.s)/(b.e-b.s)*100)):''}<div class="bt">${hm(b.s)}<small>${hm(b.e)}</small></div>${swatch(b)}<div class="bx"><div class="nt">${esc(blockTitle(b))}${isNow?' <span class="nowtag">NOW</span>':''}</div>${w?`<div class="muted">${esc(w)}</div>`:''}${contactLine(meetingFor(d,b))}${withLine(who,d,b)}</div></div>`}).join('')+(gapDone?'':'<div class="nowgap"><i class="nowline"><b></b></i></div>'):`<div class="muted" style="padding:16px 0">Nothing on the roster for ${esc(who)} this day.</div>`;
   setSheet(`<div class="schedh"><div><div class="pt" style="margin:0">${esc(who)}</div><div class="muted">${rosterStatusLine()}</div></div><button class="ib" id="rRefresh" aria-label="Refresh">${IC.refresh}</button></div>
     <div class="dtabs">${tabs}</div>
     <div class="legend">${['booth','roam','brk','meet','prep'].map(k=>`<span>${swatch({cat:k})}${CAT[k].l.split(':')[0]}</span>`).join('')}</div>
@@ -1036,7 +1100,7 @@ function openSchedule(who,di,keep){
 function openBlock(who,di,b){
   nav(()=>openBlock(who,di,b));
   state.mode='block';$('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
-  const pl=placeFor(b);const day=roster.days[di];
+  const pl=placeForMeet(di,b);const day=roster.days[di];
   const c=CAT[b.cat]||CAT.other;
   let mapHtml='';
   overlay={sel:null,route:null,from:state.from};
@@ -1055,6 +1119,7 @@ function openBlock(who,di,b){
   setSheet(`<button class="btn" id="bBack" style="margin-bottom:8px">← ${esc(who)}'s day</button>
     <div style="display:flex;gap:10px;align-items:center">${swatch(b)}<div class="pt" style="margin:0">${esc(blockTitle(b))}</div></div>
     <div class="ps">${esc(day.name)} · ${hm(b.s)}–${hm(b.e)} · ${esc(c.l.split(':')[0])}</div>
+    ${(()=>{const m=meetingFor(di,b);return m?`<div class="meetbox"><div class="muted">Meeting with · ${esc(m.company)}${m.status&&!/confirm/i.test(m.status)?' · '+esc(m.status):''}</div>${contactLine(m,{full:true})}${m.place&&!/confirm location/i.test(m.place)?`<div class="muted" style="margin-top:4px">B2B app location: ${esc(m.place)}</div>`:''}</div>`:''})()}
     ${withLine(who,di,b)}
     ${b.text&&blockTitle(b)!==b.text?`<div class="ps" style="margin-top:6px">Roster note: <b>${esc(b.text)}</b></div>`:''}
     ${note?`<div class="ps" style="margin-top:8px">${esc(note)}</div>`:''}
@@ -1080,7 +1145,7 @@ function openTeam(keep){
   render();
 }
 /* where a person is right now (only when the roster pins them to one booth) */
-function whereNow(nm){const n=nowFor(nm);if(!n.today||!n.cur)return null;const pl=placeFor(n.cur);return pl&&pl.places.length===1&&pl.places[0].booth?pl.places[0]:null}
+function whereNow(nm){const n=nowFor(nm);if(!n.today||!n.cur)return null;const pl=placeForMeet(n.day,n.cur);return pl&&pl.places.length===1&&pl.places[0].booth?pl.places[0]:null}
 function openPerson(nm,keep){
   if(!keep)nav(()=>openPerson(nm));
   state.mode='person';state.personWho=nm;
@@ -1089,7 +1154,7 @@ function openPerson(nm,keep){
   const n=nowFor(nm),b=n.cur,nx=n.next,loc=whereNow(nm);
   if(!keep){overlay={sel:loc,route:null,from:state.from};if(loc)centerOn(loc.booth.ic,Math.max(vs,0.35));else render()}
   setSheet(`<div class="nowh"><span class="avs" style="width:36px;height:36px;font-size:14px">${esc(initials(nm))}</span><div class="pt" style="margin:0">${esc(nm)}</div></div>
-    ${b&&b.cat!=='free'?`<div class="nowb">${swatch(b)}<div><div class="nt">${esc(blockTitle(b))}</div><div class="muted">${hm(b.s)}–${hm(b.e)}${blockWhere(b)?' · '+esc(blockWhere(b)):''}</div>${withLine(nm,n.day,b)}</div></div>`:`<div class="nowb">${swatch({cat:'free'})}<div class="nt">${n.today?'Nothing scheduled now':'Not started yet'}</div></div>`}
+    ${b&&b.cat!=='free'?`<div class="nowb">${swatch(b)}<div><div class="nt">${esc(blockTitle(b))}</div><div class="muted">${hm(b.s)}–${hm(b.e)}${blockWhere(b)?' · '+esc(blockWhere(b)):''}</div>${contactLine(meetingFor(n.day,b))}${withLine(nm,n.day,b)}</div></div>`:`<div class="nowb">${swatch({cat:'free'})}<div class="nt">${n.today?'Nothing scheduled now':'Not started yet'}</div></div>`}
     ${nx?`<div class="nowb nxt">${swatch(nx)}<div><div class="muted">${n.today?'Next':'First up'} at ${hm(nx.s)}</div><div class="nt2">${esc(blockTitle(nx))}</div></div></div>`:''}
     <div class="acts"><button class="btn pri" id="pDay">${IC.history}${esc(nm)}'s day</button>${loc&&loc.booth!==state.from.booth?`<button class="btn" id="pGo">${IC.dir}Directions</button>`:''}</div>`,keep?{keepScroll:true}:{});
   $('pDay').onclick=()=>openSchedule(nm);if($('pGo'))$('pGo').onclick=()=>setDir(state.from,loc);
@@ -1102,14 +1167,14 @@ function updateLeave(){
     if(me&&roster&&state.mode!=='dir'&&!$('search').classList.contains('open')){
       const n=nowFor(me);const nx=n.next;
       if(n.today&&nx&&['meet','event','booth','setup'].includes(nx.cat)){
-        const pl=placeFor(nx);const dest=pl&&pl.places.length===1?pl.places[0]:null;
+        const pl=placeForMeet(n.day,nx);const dest=pl&&pl.places.length===1?pl.places[0]:null;
         const curLoc=whereNow(me)||home;const now=berlinNow().min;
         let walk=0;if(dest&&dest.booth&&curLoc.booth&&dest.booth!==curLoc.booth){field(curLoc.booth.k);walk=Math.ceil(mins(metres(dest.booth.k)))}
         const moving=dest?dest.booth!==curLoc.booth:true;
         const leaveAt=nx.s-walk-2;const id=roster.days[n.day].name+nx.s+nx.text;
         if(moving&&now>=leaveAt-5&&now<nx.s&&leaveDismissed!==id){
           const t=leaveAt-now;const head=t<=0?'Leave now':'Leave in '+t+' min';
-          html=`<div class="lv" data-id="${esc(id)}"><div class="lvt"><b>${head}</b> for ${esc(blockTitle(nx))}</div><div class="lvs">Starts ${hm(nx.s)}${dest?' · '+esc(dest.booth.code?'Booth '+dest.booth.code+', ':'')+hallName(dest.booth.hall)+(walk?' · '+walk+' min walk':''):(blockWhere(nx)?' · '+esc(blockWhere(nx)):'')}</div></div><button class="lvx" aria-label="Dismiss">✕</button>`;
+          html=`<div class="lv" data-id="${esc(id)}"><div class="lvt"><b>${head}</b> for ${esc(blockTitle(nx))}${(()=>{const m=meetingFor(n.day,nx);return m&&m.people.length?' with '+esc(m.people.map(x=>x.n).join(', ')):''})()}</div><div class="lvs">Starts ${hm(nx.s)}${dest?' · '+esc(dest.booth.code?'Booth '+dest.booth.code+', ':'')+hallName(dest.booth.hall)+(walk?' · '+walk+' min walk':''):(blockWhere(nx)?' · '+esc(blockWhere(nx)):'')}</div></div><button class="lvx" aria-label="Dismiss">✕</button>`;
           el._dest=dest;el._from=curLoc;
         }
       }
