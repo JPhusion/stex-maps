@@ -292,7 +292,7 @@ function buildPlaces(){
     const nm=b.name||('Booth '+b.code);
     places.push({id:'b'+b.k,name:nm,booth:b,booths:[b],codes:b.code?[b.code]:[],url:'',logo:'',desc:'',prods:[],cats:[],country:'',kind:featureKind(nm)||'booth'});
   }
-  places.forEach(p=>{p.dom=domLabel(p.url);p.k=key(p.name);p.cn=norm(p.cats.join(' '));p.hp=norm(p.prods.map(x=>x[0]+' '+(x[1]||'')).join(' | '));p.hd=norm(p.desc)});
+  places.forEach(p=>{p.n=norm(p.name);p.dom=domLabel(p.url);p.k=key(p.name);p.cn=norm(p.cats.join(' '));p.hp=norm(p.prods.map(x=>x[0]+' '+(x[1]||'')).join(' | '));p.hd=norm(p.desc)});
   // per booth occupant list
   booths.forEach(b=>b.places=[]);
   places.forEach(p=>p.booths.forEach(b=>b.places.push(p)));
