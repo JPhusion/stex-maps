@@ -497,7 +497,8 @@ async function compassToggle(){
   const keep=[vs];mapBox();const f=state.from;const D=mapEl.offsetWidth;vs=Math.max(keep[0],0.5);if(f&&f.booth){vx=D/2-f.booth.ic[0]*vs;vy=D/2-f.booth.ic[1]*vs}render();
   toast('Heading-up on. Steel halls can throw the compass off, so trust the booth numbers');
 }
-window.addEventListener('resize',()=>{if(compassOn)mapBox()});
+window.addEventListener('resize',()=>{if(compassOn)mapBox();layoutSheet()});
+if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>layoutSheet());
 mapEl.addEventListener('pointerdown',e=>{const [ex,ey]=L(e);mapEl.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[ex,ey]);cancelAnimationFrame(anim);
   if(ptrs.size===1)tapStart={x:ex,y:ey,t:Date.now(),moved:false};
   if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),cx:(a[0]+b[0])/2,cy:(a[1]+b[1])/2};if(tapStart)tapStart.moved=true}
@@ -579,7 +580,11 @@ function setSheet(html,{expand=false,keepScroll=false}={}){const st=body.scrollT
 function sheetScrollTo(el,frac){if(!el)return;let y=0,n=el;while(n&&n!==body){y+=n.offsetTop;n=n.offsetParent}body.scrollTop=Math.max(0,y-body.clientHeight*frac);try{window.scrollTo(0,0)}catch(e){}}
 function setSheetState(v){sheetState=v;layoutSheet()}
 function layoutSheet(){
-  const max=sheetState==='peek'?96:Math.round(window.innerHeight*(sheetState==='full'?0.85:0.42));
+  // never let the panel slide over the search bar / chips (on iPhone the visible height is smaller than the test screens)
+  const vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  const topEl=state.mode==='dir'?$('dir'):$('top');const topB=topEl&&topEl.style.display!=='none'?topEl.getBoundingClientRect().bottom:0;
+  const room=Math.max(160,vh-topB-12);
+  const max=sheetState==='peek'?96:Math.round(Math.min(room,vh*(sheetState==='full'?0.85:0.42)));
   sheet.style.maxHeight=max+'px';sheet.classList.toggle('peek',sheetState==='peek');
   $('sheetX').style.display=state.mode==='explore'?'none':'';
   {const bk=state.mode!=='explore';const ic=$('sbIcon');if(ic.dataset.bk!==String(bk)){ic.dataset.bk=bk;ic.innerHTML=bk?'<svg class="i" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>':'<svg class="i" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'}}
@@ -1210,6 +1215,7 @@ function openBlock(who,di,b){
   if(state.mode==='sched')state.schedReturn={who:state.schedWho,day:state.schedDay,top:body.scrollTop};
   nav(()=>openBlock(who,di,b));
   state.mode='block';$('top').style.display='';$('dir').classList.remove('open');sheet.style.display='';
+  $('sbarTxt').textContent=blockTitle(b);$('sbarTxt').classList.add('val');
   const pl=placeForMeet(di,b);const day=roster.days[di];
   const c=CAT[b.cat]||CAT.other;
   let mapHtml='';
